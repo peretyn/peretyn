@@ -1,0 +1,25 @@
+{
+	auto_https off
+	servers {
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+:{$PORT} {
+	handle /v1/* {
+		reverse_proxy {$RUNTIME_HOST}:8080
+	}
+
+	handle {
+		reverse_proxy {$DASHBOARD_HOST}:3000
+	}
+
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+	}
+}

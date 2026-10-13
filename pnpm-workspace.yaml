@@ -1,0 +1,67 @@
+packages:
+  - 'services/*'
+  - 'packages/*'
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
+  - sharp
+  - '@swc/core'
+  - unrs-resolver
+  - core-js
+  - '@parcel/watcher'
+
+catalog:
+  typescript: '5.9.3'
+  zod: '4.4.3'
+  hono: '4.12.23'
+  http-status-codes: '2.3.0'
+  '@hono/node-server': '2.0.4'
+  '@hono/zod-validator': '0.8.0'
+  drizzle-orm: '0.45.2'
+  drizzle-kit: '0.31.10'
+  pg: '8.21.0'
+  '@types/pg': '8.20.0'
+  '@better-auth-ui/core': '1.6.16'
+  '@better-auth-ui/react': '1.6.16'
+  better-auth: '1.6.33'
+  next: '16.2.7'
+  react: '19.2.7'
+  react-dom: '19.2.7'
+  '@types/react': '19.2.16'
+  '@types/react-dom': '19.2.3'
+  '@types/node': '25.9.1'
+  tailwindcss: '4.3.0'
+  '@tailwindcss/postcss': '4.3.0'
+  lucide-react: '1.17.0'
+  next-themes: '0.4.6'
+  shadcn: '4.10.0'
+  eslint: '9.39.4'
+  '@shadcn/lint': '0.2.0'
+  typescript-eslint: '8.60.1'
+  vitest: '4.1.8'
+  execa: '9.5.3'
+  testcontainers: '12.2.0'
+  '@testcontainers/postgresql': '12.2.0'
+  tsx: '4.22.4'
+
+savePrefix: ''
+
+allowBuilds:
+  cpu-features: false
+  esbuild: true
+  msw: false
+  protobufjs: false
+  sharp: true
+  ssh2: false
+  unrs-resolver: true
+
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - '@dotenvx/dotenvx@1.71.0'
+
+autoInstallPeers: false
+enablePrePostScripts: true
+strictPeerDependencies: false
+strictDepBuilds: false
+ignoreDepScripts: true

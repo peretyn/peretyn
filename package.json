@@ -1,0 +1,59 @@
+{
+  "name": "peretyn",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Peretyn — TypeScript-first relationship-based authorization, powered by OpenFGA.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=24",
+      "onFail": "error"
+    }
+  },
+  "packageManager": "pnpm@11.21.0+sha512.521705bce689924eac72f5a3587122f362689ef6571e55ba80076fd637c11132ecffada26fad4ea79c485bfddbfd3d5a2a5b05805a77e893de71ec8a6cca3bb1",
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "build": "turbo run build",
+    "predev": "dotenvx run --ignore=MISSING_ENV_FILE -f .env.local -f .env -- bash scripts/dev-up.sh",
+    "dev": "dotenvx run --ignore=MISSING_ENV_FILE -f .env.local -f .env -- turbo run dev --filter=@peretyn/runtime --filter=@peretyn/control --filter=@peretyn/dashboard",
+    "dev:down": "docker compose down",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck && tsc -p .railway",
+    "test": "turbo run test",
+    "format": "prettier --check . --cache",
+    "format:write": "prettier --write . --cache",
+    "go:build": "turbo run go:build",
+    "go:test": "turbo run go:test",
+    "go:test:integration": "turbo run go:test:integration",
+    "go:vet": "turbo run go:vet",
+    "codegen": "openapi-typescript api/peretyn.openapi.yaml --output packages/sdk/src/generated/runtime-api.ts",
+    "codegen:check": "bash scripts/codegen-check.sh",
+    "ui:add": "sh -c 'shadcn add -c packages/ui \"$@\" && prettier --write packages/ui/src' --",
+    "dash:add": "sh -c 'shadcn add -c services/dashboard \"$@\" && prettier --write packages/ui/src services/dashboard/src' --",
+    "changeset": "changeset",
+    "version": "changeset version && pnpm install --no-frozen-lockfile",
+    "release": "turbo run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "2.31.0",
+    "@dotenvx/dotenvx": "1.71.0",
+    "@types/node": "catalog:",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.7",
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.8.3",
+    "prettier-plugin-tailwindcss": "0.8.0",
+    "railway": "3.13.1",
+    "shadcn": "catalog:",
+    "turbo": "2.9.18",
+    "typescript": "catalog:"
+  }
+}

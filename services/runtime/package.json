@@ -1,0 +1,23 @@
+{
+  "name": "@peretyn/runtime",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Peretyn runtime — Go service embedding OpenFGA.",
+  "scripts": {
+    "go:build": "go build -trimpath -o bin/peretyn-runtime ./cmd/server",
+    "go:test": "go test -race -count=1 ./...",
+    "go:test:integration": "go test -tags integration -race -count=1 ./...",
+    "go:vet": "GOWORK=off go vet ./...",
+    "go:lint": "golangci-lint run --allow-parallel-runners ./...",
+    "build": "pnpm go:build",
+    "test": "pnpm go:test",
+    "lint": "pnpm go:lint",
+    "dev": "go run ./cmd/server"
+  },
+  "containerConfig": {
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ]
+  }
+}

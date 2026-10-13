@@ -1,0 +1,196 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Snapshot channel (npm dist-tag / image tag / prerelease name): lowercase [a-z0-9-], not latest or stable'
+        default: 'canary'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  changesets:
+    name: Version PR / stable publish
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: write
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          registry-url: ${{ vars.RELEASE_NPM_REGISTRY || 'https://npm.pkg.github.com' }}
+          scope: '@peretyn'
+          cache: pnpm
+
+      - name: Restore Turbo cache
+        uses: actions/cache@v6
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Release tooling self-test
+        run: node --test scripts/release/*.test.mjs
+
+      - name: Changesets (version PR or publish)
+        id: changesets
+        uses: changesets/action@v1.9.0
+        with:
+          version: pnpm run version
+          publish: pnpm release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || github.token }}
+
+  snapshot:
+    name: Snapshot publish
+    needs: changesets
+    if: >-
+      !cancelled() && (
+        (needs.changesets.result == 'skipped' && github.event_name == 'workflow_dispatch') ||
+        (needs.changesets.result == 'success' &&
+         needs.changesets.outputs.published != 'true' &&
+         needs.changesets.outputs.hasChangesets == 'true')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      channel: ${{ steps.meta.outputs.channel }}
+      releases: ${{ steps.releases.outputs.releases }}
+    steps:
+      - id: meta
+        name: Resolve channel
+        env:
+          CHANNEL: ${{ inputs.channel || 'canary' }}
+        run: |
+          if [[ ! "$CHANNEL" =~ ^[a-z][a-z0-9-]*$ || "$CHANNEL" == latest || "$CHANNEL" == stable ]]; then
+            echo "::error::channel must match ^[a-z][a-z0-9-]*$ and not be latest or stable"
+            exit 1
+          fi
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          registry-url: ${{ vars.RELEASE_NPM_REGISTRY || 'https://npm.pkg.github.com' }}
+          scope: '@peretyn'
+          cache: pnpm
+
+      - name: Restore Turbo cache
+        uses: actions/cache@v6
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Snapshot version
+        env:
+          CHANNEL: ${{ steps.meta.outputs.channel }}
+        run: pnpm changeset version --snapshot "$CHANNEL"
+
+      - id: releases
+        name: Snapshot release plan
+        run: |
+          releases=$(git diff --name-only -- '**/package.json' | node -e '
+            const fs = require("node:fs");
+            const files = fs.readFileSync(0, "utf8").split("\n").filter(Boolean);
+            const out = files.map((f) => {
+              const m = JSON.parse(fs.readFileSync(f, "utf8"));
+              return { name: m.name, version: m.version };
+            });
+            console.log(JSON.stringify(out));
+          ')
+          echo "releases=$releases" >> "$GITHUB_OUTPUT"
+          echo "$releases"
+
+      - name: Build
+        if: steps.releases.outputs.releases != '[]'
+        run: pnpm turbo run build
+
+      - name: Publish snapshot to npm registry
+        if: steps.releases.outputs.releases != '[]'
+        run: pnpm changeset publish --tag "$CHANNEL" --no-git-tag
+        env:
+          CHANNEL: ${{ steps.meta.outputs.channel }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || github.token }}
+
+  artifacts-stable:
+    name: Stable artifacts
+    needs: changesets
+    if: ${{ !cancelled() && needs.changesets.outputs.published == 'true' }}
+    uses: ./.github/workflows/artifacts.yaml
+    permissions:
+      contents: write
+      packages: write
+    with:
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      channel: stable
+      releases: ''
+
+  deploy-railway:
+    name: Deploy to Railway
+    needs: artifacts-stable
+    if: ${{ !cancelled() && needs.artifacts-stable.result == 'success' }}
+    uses: ./.github/workflows/deploy-railway.yaml
+    secrets: inherit
+    with:
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+  artifacts-snapshot:
+    name: Snapshot artifacts
+    needs: snapshot
+    if: ${{ !cancelled() && needs.snapshot.result == 'success' && needs.snapshot.outputs.releases != '[]' }}
+    uses: ./.github/workflows/artifacts.yaml
+    permissions:
+      contents: write
+      packages: write
+    with:
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      channel: ${{ needs.snapshot.outputs.channel }}
+      releases: ${{ needs.snapshot.outputs.releases }}

@@ -1,0 +1,47 @@
+version: '2'
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - misspell
+    - unconvert
+    - nestif
+    - gocognit
+    - funlen
+    - revive
+    - mnd
+    - wrapcheck
+    - err113
+  settings:
+    nestif:
+      min-complexity: 3
+    gocognit:
+      min-complexity: 15
+    funlen:
+      lines: 40
+      statements: 25
+      ignore-comments: true
+    revive:
+      rules:
+        - name: argument-limit
+          arguments: [3]
+        - name: max-control-nesting
+          arguments: [2]
+        - name: early-return
+        - name: indent-error-flow
+        - name: superfluous-else
+  exclusions:
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+      - legacy
+    rules:
+      - path: _test\.go
+        linters: [funlen, mnd, gocognit, err113, wrapcheck]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

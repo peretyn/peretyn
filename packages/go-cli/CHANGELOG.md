@@ -1,0 +1,5 @@
+# @peretyn/go-cli
+
+## 0.1.0
+
+Initial public release.

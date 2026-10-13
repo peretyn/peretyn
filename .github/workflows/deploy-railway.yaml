@@ -1,0 +1,56 @@
+name: Deploy Railway
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Commit sha to deploy'
+        required: true
+        type: string
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-railway
+  cancel-in-progress: false
+
+env:
+  RAILWAY_CLI_VERSION: '5.64.2'
+
+jobs:
+  apply:
+    name: Apply to Railway
+    if: ${{ github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Railway CLI
+        run: npm install --global "@railway/cli@$RAILWAY_CLI_VERSION"
+
+      - name: Plan
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          GHCR_USERNAME: ${{ vars.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: railway config plan --out railway-plan.json
+
+      - name: Apply
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway config apply --plan railway-plan.json --yes

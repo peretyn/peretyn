@@ -1,0 +1,74 @@
+{
+  "$schema": "https://v2-9-18.turborepo.dev/schema.json",
+  "ui": "tui",
+  "globalDependencies": ["pnpm-lock.yaml", ".env", "go.work", "go.work.sum", "tsconfig.base.json"],
+  "globalEnv": [
+    "NODE_ENV",
+    "CI",
+    "DATABASE_URL",
+    "PERETYN_RUNTIME_URL",
+    "PERETYN_CONTROL_URL",
+    "PERETYN_TOKEN",
+    "PERETYN_DASHBOARD_URL",
+    "BETTER_AUTH_SECRET"
+  ],
+  "globalPassThroughEnv": [
+    "PERETYN_RUNTIME_DATABASE_URL",
+    "PERETYN_INTERNAL_SECRET",
+    "PERETYN_RUNTIME_INTERNAL_URL",
+    "PERETYN_RUNTIME_ADDR",
+    "PERETYN_RUNTIME_INTERNAL_ADDR",
+    "PERETYN_CONTROL_PORT",
+    "PERETYN_DASHBOARD_PORT",
+    "PERETYN_LOG_LEVEL",
+    "PERETYN_RUNTIME_SCHEMA",
+    "PERETYN_REQUEST_TIMEOUT",
+    "PERETYN_KEY_PREFIX",
+    "PERETYN_ALLOW_SIGNUP",
+    "PERETYN_RESEND_API_KEY",
+    "PERETYN_MAILPIT_URL",
+    "PERETYN_EMAIL_FROM"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "bin/**"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
+      "env": ["NEXT_OUTPUT"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "go:build": {
+      "inputs": ["**/*.go", "go.mod", "go.sum"],
+      "outputs": ["bin/**"],
+      "env": ["GOOS", "GOARCH"]
+    },
+    "go:test": {
+      "inputs": ["**/*.go", "go.mod", "go.sum"],
+      "cache": false
+    },
+    "go:test:integration": {
+      "inputs": ["**/*.go", "go.mod", "go.sum"],
+      "cache": false
+    },
+    "go:vet": {
+      "inputs": ["**/*.go", "go.mod", "go.sum"]
+    },
+    "go:lint": {
+      "inputs": ["**/*.go", "go.mod", "go.sum", "$TURBO_ROOT$/.golangci.yml"]
+    }
+  }
+}

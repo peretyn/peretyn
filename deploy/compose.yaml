@@ -1,0 +1,74 @@
+name: peretyn
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      PERETYN_DOMAIN: ${PERETYN_DOMAIN:?set in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - dashboard
+      - runtime
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: peretyn
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: peretyn
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U peretyn -d peretyn']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  runtime:
+    image: ghcr.io/peretyn/peretyn/runtime:${PERETYN_TAG:?set in .env}
+    restart: unless-stopped
+    environment:
+      PERETYN_RUNTIME_DATABASE_URL: postgres://peretyn:${POSTGRES_PASSWORD}@postgres:5432/peretyn
+      PERETYN_INTERNAL_SECRET: ${PERETYN_INTERNAL_SECRET:?set in .env}
+      PERETYN_REQUEST_TIMEOUT: ${PERETYN_REQUEST_TIMEOUT:-5s}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  control:
+    image: ghcr.io/peretyn/peretyn/control:${PERETYN_TAG:?set in .env}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://peretyn:${POSTGRES_PASSWORD}@postgres:5432/peretyn
+      PERETYN_RUNTIME_INTERNAL_URL: http://runtime:8081
+      PERETYN_INTERNAL_SECRET: ${PERETYN_INTERNAL_SECRET}
+      PERETYN_DASHBOARD_URL: ${PERETYN_DASHBOARD_URL:?set in .env}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set in .env}
+      PERETYN_RESEND_API_KEY: ${PERETYN_RESEND_API_KEY:-}
+      PERETYN_EMAIL_FROM: ${PERETYN_EMAIL_FROM:-no-reply@peretyn.dev}
+      PERETYN_ALLOW_SIGNUP: ${PERETYN_ALLOW_SIGNUP:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dashboard:
+    image: ghcr.io/peretyn/peretyn/dashboard:${PERETYN_TAG:?set in .env}
+    restart: unless-stopped
+    environment:
+      PERETYN_CONTROL_URL: http://control:3001
+    depends_on:
+      - control
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:

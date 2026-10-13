@@ -1,0 +1,564 @@
+openapi: 3.1.0
+info:
+  title: Peretyn Runtime API
+  version: 0.1.0
+  description: >
+    The public data API (`/v1`) exposed by `peretyn-runtime`: the wire shapes
+    the SDK and the Go handlers must agree on. The SDK's TS types are generated
+    from here (`pnpm codegen`); the Go handlers are hand-written and nothing
+    checks them against this file.
+
+    Authentication is a bearer token. The store the token unlocks is resolved
+    server-side from the token, so it never appears in the request path.
+    Store/model provisioning lives on the runtime's internal listener and is not
+    part of this public contract.
+servers:
+  - url: http://localhost:8080
+    description: Local runtime
+security:
+  - bearerAuth: []
+paths:
+  /v1/me:
+    get:
+      operationId: getMe
+      summary: Resolve the store + scope bound to the calling token.
+      responses:
+        '200':
+          description: Token scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /v1/check:
+    post:
+      operationId: check
+      summary: Single permission check.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckRequest'
+      responses:
+        '200':
+          description: Decision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+  /v1/batch-check:
+    post:
+      operationId: batchCheck
+      summary: Run many checks in one call; results keyed by correlation id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchCheckRequest'
+      responses:
+        '200':
+          description: Per-correlation-id results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchCheckResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+  /v1/write:
+    post:
+      operationId: write
+      summary: Write and/or delete relationship tuples.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteRequest'
+      responses:
+        '200':
+          description: Write applied.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+  /v1/expand:
+    post:
+      operationId: expand
+      summary: Return the proof tree for a relation on an object.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpandRequest'
+      responses:
+        '200':
+          description: Proof tree.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpandResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+  /v1/list-objects:
+    post:
+      operationId: listObjects
+      summary: Objects of a type the subject has a relation on.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListObjectsRequest'
+      responses:
+        '200':
+          description: Object ids (fully qualified).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListObjectsResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+  /v1/list-users:
+    post:
+      operationId: listUsers
+      summary: Subjects of a type that have a relation on the object.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListUsersRequest'
+      responses:
+        '200':
+          description: Subjects.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListUsersResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+  /v1/changes:
+    get:
+      operationId: readChanges
+      summary: Tuple changelog (replication / sync).
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+        - in: query
+          name: continuation_token
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Changes page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadChangesResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+        '504':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Error:
+      description: >
+        400 invalid request, 401 missing or unknown bearer token, 403 token not
+        scoped to a store, 409 conflicting concurrent write, 413 body over 4 MiB,
+        422 throttled, 502 engine failure, 503 key lookup unavailable, 504
+        deadline exceeded. A 5xx `error` carries only the status text.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [error, code]
+      properties:
+        error:
+          type: string
+        code:
+          type: integer
+          description: The HTTP status, repeated.
+    MeResponse:
+      type: object
+      required: [storeId, environment, projectSlug, kind]
+      properties:
+        storeId:
+          type: string
+        environment:
+          type: string
+        projectSlug:
+          type: string
+        kind:
+          type: string
+    TupleKey:
+      type: object
+      required: [user, relation, object]
+      properties:
+        user:
+          type: string
+          description: Fully-qualified subject, e.g. `user:alice` or `tenant:acme#admin`.
+        relation:
+          type: string
+        object:
+          type: string
+          description: Fully-qualified object, e.g. `document:doc1`.
+    ContextualTuples:
+      type: object
+      properties:
+        tuple_keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/TupleKey'
+    Consistency:
+      type: string
+      enum: [MINIMIZE_LATENCY, HIGHER_CONSISTENCY]
+    CheckRequest:
+      type: object
+      required: [tuple_key]
+      properties:
+        tuple_key:
+          $ref: '#/components/schemas/TupleKey'
+        contextual_tuples:
+          $ref: '#/components/schemas/ContextualTuples'
+        consistency:
+          $ref: '#/components/schemas/Consistency'
+    CheckResponse:
+      type: object
+      required: [allowed]
+      properties:
+        allowed:
+          type: boolean
+        resolution:
+          type: string
+    BatchCheckItem:
+      type: object
+      required: [tuple_key, correlation_id]
+      properties:
+        tuple_key:
+          $ref: '#/components/schemas/TupleKey'
+        contextual_tuples:
+          $ref: '#/components/schemas/ContextualTuples'
+        correlation_id:
+          type: string
+    BatchCheckRequest:
+      type: object
+      required: [checks]
+      properties:
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchCheckItem'
+    BatchCheckResultItem:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+    BatchCheckResponse:
+      type: object
+      required: [result]
+      properties:
+        result:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BatchCheckResultItem'
+    WriteTuples:
+      type: object
+      properties:
+        tuple_keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/TupleKey'
+        on_duplicate:
+          type: string
+          enum: [ignore, error]
+    DeleteTuples:
+      type: object
+      properties:
+        tuple_keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/TupleKey'
+        on_missing:
+          type: string
+          enum: [ignore, error]
+    WriteRequest:
+      type: object
+      properties:
+        writes:
+          $ref: '#/components/schemas/WriteTuples'
+        deletes:
+          $ref: '#/components/schemas/DeleteTuples'
+        authorization_model_id:
+          type: string
+    ExpandRequest:
+      type: object
+      required: [tuple_key]
+      properties:
+        tuple_key:
+          type: object
+          required: [relation, object]
+          properties:
+            relation:
+              type: string
+            object:
+              type: string
+        contextual_tuples:
+          $ref: '#/components/schemas/ContextualTuples'
+    ExpandTreeNode:
+      type: object
+      description: One node in an OpenFGA Expand proof tree (proto3-JSON).
+      properties:
+        name:
+          type: string
+        union:
+          type: object
+          properties:
+            nodes:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExpandTreeNode'
+        intersection:
+          type: object
+          properties:
+            nodes:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExpandTreeNode'
+        difference:
+          type: object
+          properties:
+            base:
+              $ref: '#/components/schemas/ExpandTreeNode'
+            subtract:
+              $ref: '#/components/schemas/ExpandTreeNode'
+        leaf:
+          type: object
+          properties:
+            users:
+              type: object
+              properties:
+                users:
+                  type: array
+                  items:
+                    type: string
+            computed:
+              type: object
+              properties:
+                userset:
+                  type: string
+            tupleToUserset:
+              type: object
+              properties:
+                tupleset:
+                  type: string
+                computed:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      userset:
+                        type: string
+    ExpandResponse:
+      type: object
+      properties:
+        tree:
+          type: object
+          properties:
+            root:
+              $ref: '#/components/schemas/ExpandTreeNode'
+    ListObjectsRequest:
+      type: object
+      required: [type, relation, user]
+      properties:
+        type:
+          type: string
+        relation:
+          type: string
+        user:
+          type: string
+        contextual_tuples:
+          $ref: '#/components/schemas/ContextualTuples'
+        consistency:
+          $ref: '#/components/schemas/Consistency'
+    ListObjectsResponse:
+      type: object
+      properties:
+        objects:
+          type: array
+          items:
+            type: string
+    ListUsersRequest:
+      type: object
+      required: [object, relation, user_filters]
+      properties:
+        object:
+          type: object
+          properties:
+            type:
+              type: string
+            id:
+              type: string
+        relation:
+          type: string
+        user_filters:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+        contextual_tuples:
+          $ref: '#/components/schemas/ContextualTuples'
+        consistency:
+          $ref: '#/components/schemas/Consistency'
+    ListUsersResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            type: object
+            properties:
+              object:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  id:
+                    type: string
+              userset:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  id:
+                    type: string
+                  relation:
+                    type: string
+              wildcard:
+                type: object
+                properties:
+                  type:
+                    type: string
+    ReadChangesResponse:
+      type: object
+      properties:
+        changes:
+          type: array
+          items:
+            type: object
+        continuation_token:
+          type: string

@@ -1,0 +1,255 @@
+name: Artifacts
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Commit sha to build'
+        required: true
+        type: string
+      channel:
+        description: '"stable" or a snapshot channel name (canary, rc, ...)'
+        required: true
+        type: string
+      releases:
+        description: 'JSON [{name, version}]; empty means derive from git tags at HEAD (stable rerun-safe path)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    name: Discover artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      builds: ${{ steps.matrices.outputs.builds }}
+      images: ${{ steps.matrices.outputs.images }}
+      binaries: ${{ steps.matrices.outputs.binaries }}
+      sha_short: ${{ steps.matrices.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - id: matrices
+        name: Build matrices from release set
+        env:
+          RELEASES: ${{ inputs.releases }}
+        run: |
+          if [ -z "$RELEASES" ]; then
+            RELEASES=$(git tag --points-at HEAD '@peretyn/*@*' \
+              | sed -E 's/^(.*)@([^@]+)$/{"name":"\1","version":"\2"}/' \
+              | jq -sc '.')
+          fi
+          echo "release set: $RELEASES"
+          names=$(echo "$RELEASES" | jq -r '[.[].name] | join(",")')
+          if [ -z "$names" ]; then
+            {
+              echo "builds=[]"
+              echo "images=[]"
+              echo "binaries=[]"
+              echo "sha_short=$(git rev-parse --short HEAD)"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node scripts/release/discover.mjs --packages "$names" > discovered.json
+          jq -c --argjson releases "$RELEASES" '
+            ($releases | map({(.name): .version}) | add) as $v
+            | .containerBuilds |= map(.version = ($v[.pkg] // .version))
+            | .containerImages |= map(.version = ($v[.pkg] // .version))
+            | .binaries        |= map(.version = ($v[.pkg] // .version))
+          ' discovered.json > matrices.json
+          {
+            echo "builds=$(jq -c '.containerBuilds' matrices.json)"
+            echo "images=$(jq -c '.containerImages' matrices.json)"
+            echo "binaries=$(jq -c '.binaries' matrices.json)"
+            echo "sha_short=$(git rev-parse --short HEAD)"
+          } >> "$GITHUB_OUTPUT"
+          cat matrices.json
+
+  build-images:
+    name: Build ${{ matrix.image }} ${{ matrix.platform }}
+    needs: discover
+    if: ${{ needs.discover.outputs.builds != '[]' }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.discover.outputs.builds) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - id: build
+        name: Build and push by digest
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            VERSION=${{ matrix.version }}
+          provenance: false
+          outputs: type=image,name=ghcr.io/${{ github.repository }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.platform }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge-images:
+    name: Tag ${{ matrix.image }} manifest
+    needs: [discover, build-images]
+    if: ${{ needs.discover.outputs.images != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.discover.outputs.images) }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digests-${{ matrix.image }}-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Create tagged manifest list
+        working-directory: /tmp/digests
+        env:
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          image="ghcr.io/${{ github.repository }}/${{ matrix.image }}"
+          if [ "$CHANNEL" = "stable" ]; then
+            tags="-t $image:${{ matrix.version }} -t $image:latest"
+          else
+            tags="-t $image:$CHANNEL -t $image:${{ matrix.version }} -t $image:sha-${{ needs.discover.outputs.sha_short }}"
+          fi
+          # shellcheck disable=SC2046,SC2086
+          docker buildx imagetools create $tags $(printf "$image@sha256:%s " *)
+
+  binaries:
+    name: Binaries and channel release
+    needs: discover
+    if: ${{ inputs.channel != 'stable' || needs.discover.outputs.binaries != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        if: ${{ needs.discover.outputs.binaries != '[]' }}
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-go@v7
+        if: ${{ needs.discover.outputs.binaries != '[]' }}
+        with:
+          go-version-file: services/runtime/go.mod
+          cache-dependency-path: |
+            services/runtime/go.sum
+            packages/go-cli/go.sum
+
+      - name: Cross-compile
+        if: ${{ needs.discover.outputs.binaries != '[]' }}
+        env:
+          BINARIES: ${{ needs.discover.outputs.binaries }}
+        run: |
+          mkdir -p /tmp/bin
+          echo "$BINARIES" | jq -c '.[]' | while read -r entry; do
+            dir=$(echo "$entry" | jq -r .dir)
+            path=$(echo "$entry" | jq -r .path)
+            goos=$(echo "$entry" | jq -r .goos)
+            goarch=$(echo "$entry" | jq -r .goarch)
+            asset=$(echo "$entry" | jq -r .asset)
+            version=$(echo "$entry" | jq -r .version)
+            echo "building $asset ($version)"
+            (cd "$dir" && CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
+              go build -trimpath -ldflags "-s -w -X main.version=$version" \
+              -o "/tmp/bin/$asset" "$path")
+          done
+          ls -la /tmp/bin
+
+      - name: Attach to stable package releases
+        if: ${{ inputs.channel == 'stable' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BINARIES: ${{ needs.discover.outputs.binaries }}
+        run: |
+          echo "$BINARIES" | jq -r '[.[] | {pkg, version}] | unique | .[] | "\(.pkg)@\(.version)"' \
+            | while read -r tag; do
+                echo "uploading to release $tag"
+                assets=$(echo "$BINARIES" | jq -r --arg tag "$tag" \
+                  '.[] | select("\(.pkg)@\(.version)" == $tag) | "/tmp/bin/\(.asset)"')
+                if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+                  gh release create "$tag" --title "$tag" --generate-notes \
+                    --verify-tag --repo "$GITHUB_REPOSITORY"
+                fi
+                # shellcheck disable=SC2086
+                gh release upload "$tag" $assets --clobber --repo "$GITHUB_REPOSITORY"
+              done
+
+      - name: Update rolling channel prerelease
+        if: ${{ inputs.channel != 'stable' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASES: ${{ inputs.releases }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          title="Rolling $CHANNEL build (${{ needs.discover.outputs.sha_short }})"
+          manifest=$(echo "$RELEASES" | jq -r '.[] | "- " + .name + "@" + .version')
+          notes=$(printf 'Latest %s snapshot. Commit %s.\n\n%s\n' "$CHANNEL" "${{ inputs.ref }}" "$manifest")
+          if ! gh release view "$CHANNEL" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$CHANNEL" --prerelease --title "$title" --notes "$notes" \
+              --target "${{ inputs.ref }}" --repo "$GITHUB_REPOSITORY"
+          else
+            gh release edit "$CHANNEL" --title "$title" --notes "$notes" --repo "$GITHUB_REPOSITORY"
+          fi
+          if compgen -G "/tmp/bin/*" >/dev/null; then
+            gh release upload "$CHANNEL" /tmp/bin/* --clobber --repo "$GITHUB_REPOSITORY"
+          fi

@@ -1,0 +1,27 @@
+{
+  "name": "@peretyn/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "description": "End-to-end tests for the Peretyn SDK against a live runtime.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@peretyn/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@peretyn/eslint-config": "workspace:*",
+    "@peretyn/runtime": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "@testcontainers/postgresql": "catalog:",
+    "execa": "catalog:",
+    "testcontainers": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

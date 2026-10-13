@@ -1,0 +1,56 @@
+{
+  "name": "@peretyn/dashboard",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Peretyn developer dashboard — Next.js.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "next dev --port ${PERETYN_DASHBOARD_PORT:-3000}",
+    "build": "next build",
+    "start": "next start --port ${PERETYN_DASHBOARD_PORT:-3000}",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@better-auth-ui/core": "catalog:",
+    "@better-auth-ui/react": "catalog:",
+    "@peretyn/org-roles": "workspace:*",
+    "@peretyn/sdk": "workspace:*",
+    "bowser": "2.14.1",
+    "@peretyn/ui": "workspace:*",
+    "@tanstack/react-query": "5.101.0",
+    "@tanstack/react-pacer": "0.22.1",
+    "better-auth": "catalog:",
+    "date-fns": "4.4.0",
+    "http-status-codes": "catalog:",
+    "lucide-react": "catalog:",
+    "next": "catalog:",
+    "next-themes": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sonner": "2.0.7"
+  },
+  "devDependencies": {
+    "@peretyn/eslint-config": "workspace:*",
+    "@shadcn/lint": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-next": "16.2.7",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "containerConfig": {
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ]
+  }
+}
