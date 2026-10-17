@@ -34,24 +34,18 @@ Private packages still get versions and git tags (`privatePackages` in
 (`runtime`, `control`, `dashboard`) is a changesets `fixed` group: a change to any one
 releases all three at one version, so one image tag names a matching trio.
 
-**Registry knob**: npm publishes go to the Actions repo variable
-`RELEASE_NPM_REGISTRY` (default GitHub Packages, `https://npm.pkg.github.com`).
-To switch to npmjs: set that variable to `https://registry.npmjs.org` and add
-an `NPM_TOKEN` secret. Nothing in the code changes. Containers always go to GHCR.
+**npm**: packages publish to npmjs through
+[trusted publishing](https://docs.npmjs.com/trusted-publishers) — the Release
+workflow's OIDC identity, no tokens. A new public package needs one manual first
+publish (`pnpm publish --access public` from its directory), then a trusted
+publisher on npmjs (GitHub Actions, `peretyn/peretyn`, `release.yaml`, allow
+`npm publish`). Containers always go to GHCR.
 
 **Failures**: every step is re-run safe — `changeset publish` skips
 already-published versions, image tags re-push idempotently, binary uploads
 `--clobber`. Re-run the failed workflow until green. Yanking a bad snapshot:
-delete the GH Packages version / move the dist-tag / delete the GHCR tag.
+deprecate the npm version / move the dist-tag / delete the GHCR tag.
 
-**Consuming pre-releases** (while on GitHub Packages): PAT with
-`read:packages`, then
-
-```ini
-# ~/.npmrc
-@peretyn:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=<PAT>
-```
-
-`pnpm add @peretyn/sdk@canary`. Containers: `docker login ghcr.io` with the
-same PAT; deployable stack in `deploy/compose.yaml`.
+**Consuming pre-releases**: `pnpm add @peretyn/sdk@canary`. Containers:
+`docker login ghcr.io` with a PAT with `read:packages`; deployable stack in
+`deploy/compose.yaml`.

@@ -32,7 +32,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      packages: write
+      id-token: write
     outputs:
       published: ${{ steps.changesets.outputs.published }}
       hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          registry-url: ${{ vars.RELEASE_NPM_REGISTRY || 'https://npm.pkg.github.com' }}
+          registry-url: 'https://registry.npmjs.org'
           scope: '@peretyn'
           cache: pnpm
 
@@ -73,7 +73,6 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || github.token }}
 
   snapshot:
     name: Snapshot publish
@@ -89,7 +88,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      packages: write
+      id-token: write
     outputs:
       channel: ${{ steps.meta.outputs.channel }}
       releases: ${{ steps.releases.outputs.releases }}
@@ -114,7 +113,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          registry-url: ${{ vars.RELEASE_NPM_REGISTRY || 'https://npm.pkg.github.com' }}
+          registry-url: 'https://registry.npmjs.org'
           scope: '@peretyn'
           cache: pnpm
 
@@ -158,7 +157,6 @@ jobs:
         run: pnpm changeset publish --tag "$CHANNEL" --no-git-tag
         env:
           CHANNEL: ${{ steps.meta.outputs.channel }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || github.token }}
 
   artifacts-stable:
     name: Stable artifacts
