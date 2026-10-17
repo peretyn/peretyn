@@ -2,6 +2,10 @@
 
 Typed TypeScript client for the Peretyn runtime.
 
+```sh
+pnpm add @peretyn/sdk
+```
+
 ```ts
 import { defineSchema, type, any, peretyn } from '@peretyn/sdk';
 
