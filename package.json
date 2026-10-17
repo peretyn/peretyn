@@ -26,7 +26,7 @@
     "dev": "dotenvx run --ignore=MISSING_ENV_FILE -f .env.local -f .env -- turbo run dev --filter=@peretyn/runtime --filter=@peretyn/control --filter=@peretyn/dashboard",
     "dev:down": "docker compose down",
     "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck && tsc -p .railway",
+    "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --check . --cache",
     "format:write": "prettier --write . --cache",
@@ -51,7 +51,6 @@
     "openapi-typescript": "7.13.0",
     "prettier": "3.8.3",
     "prettier-plugin-tailwindcss": "0.8.0",
-    "railway": "3.13.1",
     "shadcn": "catalog:",
     "turbo": "2.9.18",
     "typescript": "catalog:"

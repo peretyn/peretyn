@@ -173,15 +173,6 @@ jobs:
       channel: stable
       releases: ''
 
-  deploy-railway:
-    name: Deploy to Railway
-    needs: artifacts-stable
-    if: ${{ !cancelled() && needs.artifacts-stable.result == 'success' }}
-    uses: ./.github/workflows/deploy-railway.yaml
-    secrets: inherit
-    with:
-      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
   artifacts-snapshot:
     name: Snapshot artifacts
     needs: snapshot

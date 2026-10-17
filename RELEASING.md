@@ -16,8 +16,7 @@ Versioning is owned by [changesets](https://github.com/changesets/changesets); e
   machinery, different dist-tag.
 - Stable: merge the "Version Packages" PR that the changesets action keeps
   open on `main`. That single merge publishes npm, pushes `pkg@version` git
-  tags, creates per-package GitHub releases, builds all artifacts, and deploys
-  them to Railway ([`deploy/railway/README.md`](deploy/railway/README.md)).
+  tags, creates per-package GitHub releases, and builds all artifacts.
   For an RC train before a big release, use `changeset pre enter <tag>`
   ([prereleases doc](https://github.com/changesets/changesets/blob/main/docs/prereleases.md)) —
   deliberately not wired up yet.

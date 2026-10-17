@@ -29,5 +29,3 @@ better-auth's admin endpoints under `/api/auth/admin/*`.
 
 To upgrade, change `PERETYN_TAG` and run `docker compose pull && docker compose up -d`.
 All data is in the `postgres-data` volume; back it up with `pg_dump`.
-
-Railway: [`railway/README.md`](railway/README.md).
