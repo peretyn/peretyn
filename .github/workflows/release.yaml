@@ -173,34 +173,6 @@ jobs:
       channel: stable
       releases: ''
 
-  notify-deploy:
-    name: Notify managed deployment
-    needs: artifacts-stable
-    if: ${{ !cancelled() && needs.artifacts-stable.result == 'success' && vars.DEPLOY_APP_ID != '' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - id: token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ vars.DEPLOY_APP_ID }}
-          private-key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: peretyn-deploy
-
-      - name: Send stable-release dispatch
-        env:
-          GH_TOKEN: ${{ steps.token.outputs.token }}
-        run: |
-          version=$(jq -r .version services/runtime/package.json)
-          gh api "repos/${{ github.repository_owner }}/peretyn-deploy/dispatches" \
-            -f event_type=stable-release \
-            -f "client_payload[version]=$version"
-
   artifacts-snapshot:
     name: Snapshot artifacts
     needs: snapshot
