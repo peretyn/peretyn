@@ -2,6 +2,18 @@
   "name": "@peretyn/sdk",
   "version": "0.1.0",
   "description": "Peretyn TypeScript SDK — typed client for the Peretyn runtime.",
+  "keywords": [
+    "authorization",
+    "fga",
+    "openfga",
+    "rebac",
+    "permissions",
+    "peretyn"
+  ],
+  "homepage": "https://github.com/peretyn/peretyn/tree/main/packages/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/peretyn/peretyn/issues"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
