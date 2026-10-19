@@ -53,21 +53,52 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: process.env.PERETYN_ALLOW_SIGNUP !== 'true',
+    requireEmailVerification: true,
     sendResetPassword: ({ user, url }) =>
       unwrapOrThrowAuthError(
         sendAuthEmail({ to: user.email, subject: 'Reset your password', url }),
       ),
+    onPasswordReset: ({ user }) =>
+      unwrapOrThrowAuthError(
+        sendAuthEmail({
+          to: user.email,
+          subject: 'Your Peretyn password was changed',
+          intro: 'Your Peretyn password was just reset.',
+          url: `${dashboardUrl}/auth/forgot-password`,
+          footer: 'If this was not you, reset your password again right away.',
+        }),
+      ),
   },
   emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
     sendVerificationEmail: ({ user, url }) =>
       unwrapOrThrowAuthError(sendAuthEmail({ to: user.email, subject: 'Verify your email', url })),
   },
   user: {
     changeEmail: {
       enabled: true,
+      sendChangeEmailConfirmation: ({ user, newEmail, url }) =>
+        unwrapOrThrowAuthError(
+          sendAuthEmail({
+            to: user.email,
+            subject: 'Confirm your email change',
+            intro: `Confirm changing your Peretyn email to ${newEmail}.`,
+            url,
+          }),
+        ),
     },
     deleteUser: {
       enabled: true,
+      sendDeleteAccountVerification: ({ user, url }) =>
+        unwrapOrThrowAuthError(
+          sendAuthEmail({
+            to: user.email,
+            subject: 'Confirm deleting your Peretyn account',
+            intro: 'Confirm deleting your Peretyn account. This cannot be undone.',
+            url,
+          }),
+        ),
       beforeDelete: (user) => unwrapOrThrowAuthError(ensureNotSoleOwner(user.id)),
     },
   },
