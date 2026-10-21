@@ -14,12 +14,15 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => HTML_ESCAPES[character]!);
 }
 
-export function renderAuthEmail({ to, subject, url }: AuthEmail, from: string): RenderedEmail {
-  const text = `${subject}\n\nOpen this link to continue:\n${url}\n\n${IGNORE_NOTICE}\n`;
+export function renderAuthEmail(
+  { to, subject, url, intro = subject, footer = IGNORE_NOTICE }: AuthEmail,
+  from: string,
+): RenderedEmail {
+  const text = `${intro}\n\nOpen this link to continue:\n${url}\n\n${footer}\n`;
   const html =
-    `<p>${escapeHtml(subject)}</p>` +
+    `<p>${escapeHtml(intro)}</p>` +
     `<p><a href="${escapeHtml(url)}">Continue</a></p>` +
     `<p>Or open this link: ${escapeHtml(url)}</p>` +
-    `<p>${IGNORE_NOTICE}</p>`;
+    `<p>${escapeHtml(footer)}</p>`;
   return { from, to, subject, text, html };
 }

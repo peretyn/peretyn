@@ -18,7 +18,13 @@ if (password.length < minPasswordLength) {
 const name = rest.find((a) => !a.startsWith('--')) ?? email.split('@')[0]!;
 
 await auth.api.createUser({
-  body: { email, password, name, ...(makeAdmin && { role: 'admin' }) },
+  body: {
+    email,
+    password,
+    name,
+    data: { emailVerified: true },
+    ...(makeAdmin && { role: 'admin' }),
+  },
 });
 
 log('user_enrolled', { email, admin: makeAdmin });

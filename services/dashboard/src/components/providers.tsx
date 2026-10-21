@@ -27,7 +27,11 @@ export function Providers({ children }: { children: ReactNode }) {
             authClient={authClient}
             redirectTo="/"
             navigate={({ to, replace }) => (replace ? router.replace(to) : router.push(to))}
-            plugins={[deleteUserPlugin(), organizationPlugin(), themePlugin({ useTheme })]}
+            plugins={[
+              deleteUserPlugin({ sendDeleteAccountVerification: true }),
+              organizationPlugin(),
+              themePlugin({ useTheme }),
+            ]}
             Link={Link}
           >
             {children}
