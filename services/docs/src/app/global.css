@@ -1,0 +1,11 @@
+@import '@peretyn/ui/globals.css';
+@import 'fumadocs-ui/css/shadcn.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@source '../../node_modules/fumadocs-ui/dist/**/*.js';
+
+:root,
+.dark {
+  --color-fd-primary: var(--foreground);
+  --color-fd-primary-foreground: var(--background);
+}
