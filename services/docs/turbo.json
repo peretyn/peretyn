@@ -1,0 +1,12 @@
+{
+  "$schema": "https://v2-9-18.turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "$TURBO_ROOT$/api/peretyn.openapi.yaml"]
+    },
+    "test": {
+      "dependsOn": ["build"]
+    }
+  }
+}
