@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from '@peretyn/ui/components/card';
 import { Spinner } from '@peretyn/ui/components/spinner';
+import { cn } from '@peretyn/ui/lib/utils';
 import { EnvContent } from '@/components/project/env-content';
 import { NoSchemaGuide } from '@/components/project/no-schema-guide';
 import { ProofTree } from '@/components/project/proof-tree';
@@ -143,16 +144,17 @@ function RunCheckCard({
 
 function DecisionSummary({ allowed, asked }: { allowed: boolean; asked: Tuple | null }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="flex size-10 items-center justify-center rounded-full bg-muted">
-        {allowed ? (
-          <CheckIcon className="size-5" />
-        ) : (
-          <XIcon className="size-5 text-muted-foreground" />
+    <div className={cn('flex items-center gap-3', allowed ? 'text-allowed' : 'text-denied')}>
+      <span
+        className={cn(
+          'flex size-10 items-center justify-center rounded-full',
+          allowed ? 'bg-allowed/10' : 'bg-denied/10',
         )}
+      >
+        {allowed ? <CheckIcon className="size-5" /> : <XIcon className="size-5" />}
       </span>
       <div>
-        <div className="text-lg font-semibold">{allowed ? 'Allowed' : 'Denied'}</div>
+        <div className="font-mono text-lg font-semibold">{allowed ? 'allowed' : 'denied'}</div>
         {asked && (
           <div className="font-mono text-xs text-muted-foreground">
             {asked.user} · {asked.relation} · {asked.object}
