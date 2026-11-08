@@ -1,0 +1,38 @@
+---
+title: Tuples
+description: Write and delete the facts that checks are decided from.
+---
+
+## Write tuples
+
+`write` stores tuples. You can only write relations. Permissions are computed from them.
+
+<include>../../../snippets/sdk/write.ts</include>
+
+The script prints `wrote 2 tuples`.
+
+## Delete tuples
+
+Pass `deletes` to remove tuples. One call can take both `writes` and `deletes`, and the runtime applies them in one transaction.
+
+<include>../../../snippets/sdk/delete.ts</include>
+
+The script prints `denied`. Bob's only path to the roadmap was the tuple that the script deleted.
+
+## Idempotent writes
+
+By default, writing a tuple that already exists and deleting one that doesn't exist both succeed without changing anything. You can make either case an error:
+
+| Option        | Effect                                                             |
+| ------------- | ------------------------------------------------------------------ |
+| `onDuplicate` | `'ignore'` (default) or `'error'` when a written tuple exists.     |
+| `onMissing`   | `'ignore'` (default) or `'error'` when a deleted tuple is missing. |
+| `strict`      | Sets both options to `'error'`.                                    |
+
+The SDK retries a write only when both options are `'ignore'`. A strict write runs once.
+
+`written` and `deleted` count the tuples that you sent, not the tuples that changed.
+
+## Read changes
+
+`readChanges` pages through every write and delete in the environment, oldest first. Pass `type` to see changes to one object type only. Pass the `continuationToken` from one page to get the next.
