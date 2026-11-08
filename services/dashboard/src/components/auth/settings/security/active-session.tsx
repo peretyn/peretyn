@@ -72,7 +72,7 @@ export function ActiveSession({ activeSession }: ActiveSessionProps) {
           </span>
 
           {isCurrentSession ? (
-            <span className="w-fit rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            <span className="w-fit rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
               {localization.settings.currentSession}
             </span>
           ) : (

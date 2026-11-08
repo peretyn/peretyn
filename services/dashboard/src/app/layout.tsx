@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 
 import '@peretyn/ui/globals.css';
 import { cn } from '@peretyn/ui/lib/utils';
 import { Providers } from '@/components/providers';
 
-const fontSans = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const fontSans = Geist({ subsets: ['latin'], variable: '--font-sans' });
 const fontMono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
 export const metadata: Metadata = {

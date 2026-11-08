@@ -23,9 +23,9 @@ export type OrganizationInvitationRowProps = {
 };
 
 const statusBadgeClasses: Record<string, string> = {
-  pending: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  accepted: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  rejected: 'bg-destructive/10 text-destructive',
+  pending: 'border-dashed border-input text-muted-foreground',
+  accepted: 'bg-allowed/10 text-allowed',
+  rejected: 'bg-denied/10 text-denied',
   canceled: 'bg-muted text-muted-foreground',
 };
 
