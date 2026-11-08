@@ -1,6 +1,7 @@
 @import '@peretyn/ui/globals.css';
 @import 'fumadocs-ui/css/shadcn.css';
 @import 'fumadocs-ui/css/preset.css';
+@import 'fumadocs-openapi/css/preset.css';
 
 @source '../../node_modules/fumadocs-ui/dist/**/*.js';
 

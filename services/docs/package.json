@@ -12,12 +12,14 @@
     "build": "next build",
     "start": "next start --port ${PERETYN_DOCS_PORT:-3002}",
     "lint": "eslint .",
-    "typecheck": "next typegen && tsc -p tsconfig.json --noEmit"
+    "typecheck": "next typegen && tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@peretyn/ui": "workspace:*",
     "fumadocs-core": "16.18.1",
     "fumadocs-mdx": "15.5.0",
+    "fumadocs-openapi": "12.6.0",
     "fumadocs-ui": "16.18.1",
     "lucide-react": "catalog:",
     "next": "catalog:",
@@ -36,7 +38,8 @@
     "eslint": "catalog:",
     "eslint-config-next": "16.2.7",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "containerConfig": {
     "platforms": [
