@@ -1,6 +1,28 @@
 ---
-title: Peretyn
+title: Introduction
 description: Relationship-based authorization for TypeScript, powered by OpenFGA.
 ---
 
-These docs are under construction.
+Peretyn answers one question for your application: **is this allowed?**
+
+You describe who can do what as relationships between things. Alice is a member of the design team. The design team can view the specs folder. The roadmap document is in the specs folder. From those facts, Peretyn decides that Alice can view the roadmap.
+
+This model is called relationship-based access control (ReBAC). It is the model behind Google Zanzibar, and Peretyn runs it on [OpenFGA](https://openfga.dev).
+
+## What Peretyn adds
+
+- **Schemas in TypeScript.** You write your authorization rules with `defineSchema`. The SDK then checks every type and relation name at compile time.
+- **Environments.** Each project has a `production` and a `development` environment, each with its own data and API key.
+- **A CLI.** `peretyn build` compiles your schema, and `peretyn apply` publishes it to an environment.
+- **A dashboard.** You manage projects and keys, browse tuples, and see why a check was allowed or denied.
+
+## Next steps
+
+<Cards>
+  <Card title="Quickstart" href="/quickstart">
+    Go from an empty project to your first check.
+  </Card>
+  <Card title="Concepts" href="/concepts">
+    Learn the words Peretyn uses and how they fit together.
+  </Card>
+</Cards>
