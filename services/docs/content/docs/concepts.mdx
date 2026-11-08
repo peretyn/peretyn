@@ -1,0 +1,60 @@
+---
+title: Concepts
+description: The words Peretyn uses, and how they fit together.
+---
+
+## Organizations, projects and environments
+
+An **organization** is your team. It owns **projects**, and each project is the authorization setup of one application.
+
+A project has two **environments**: `production` and `development`. Each environment has its own model, its own tuples and its own **API key**. Data never crosses from one environment to another.
+
+The API key identifies the environment, so you never pass a project or environment id. Production keys start with `prn_live_`, and the others start with `prn_test_`. The SDK takes the key as its `token` option.
+
+## Schemas and models
+
+A **schema** is the TypeScript that you write with `defineSchema`. It declares the types of things in your application, and how they relate.
+
+`peretyn build` compiles the schema into a **model**, which is the form that Peretyn evaluates. `peretyn apply` publishes the model to an environment under a label, such as `v1`.
+
+## Tuples
+
+A **tuple** is one stored fact: a **subject** has a **relation** on an **object**.
+
+| Subject              | Relation | Object             |
+| -------------------- | -------- | ------------------ |
+| `user:alice`         | `member` | `team:design`      |
+| `team:design#member` | `viewer` | `folder:specs`     |
+| `folder:specs`       | `parent` | `document:roadmap` |
+
+A subject can be a single thing, such as `user:alice`. It can also be every holder of a relation, such as `team:design#member`. The second row gives every member of the design team the `viewer` relation on the folder.
+
+## Relations and permissions
+
+A schema has two kinds of names:
+
+- A **relation** is direct. You write tuples for it, and the schema lists the subject types that can hold it.
+- A **permission** is computed from relations. You never write tuples for a permission. You only check it.
+
+Build permissions with these functions:
+
+| Function          | Grants the permission when                                 |
+| ----------------- | ---------------------------------------------------------- |
+| `any(a, b)`       | the subject has `a` or `b`                                 |
+| `intersect(a, b)` | the subject has both `a` and `b`                           |
+| `exclude(a, b)`   | the subject has `a` but not `b`                            |
+| `via(link, name)` | the subject has `name` on the object that `link` points to |
+
+This schema describes the tuples in the table above. A user can view a document when they own it, or when they can view its parent folder:
+
+<include>../../snippets/concepts/schema.ts</include>
+
+## Checks and verdicts
+
+A **check** asks whether a subject has a relation or a permission on an object. The answer is a **verdict**: allowed or denied.
+
+Peretyn follows the tuples to find the verdict. Alice is a member of the design team. The team can view the specs folder. The roadmap is in that folder. So Alice can view the roadmap:
+
+<include>../../snippets/concepts/check.ts</include>
+
+The check prints `allowed`. Alice has no tuple on the roadmap itself, but the chain of relations reaches it.

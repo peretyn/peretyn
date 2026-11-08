@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@peretyn/eslint-config": "workspace:*",
+    "@peretyn/sdk": "workspace:*",
     "@shadcn/lint": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/mdx": "2.0.13",
