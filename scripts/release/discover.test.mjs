@@ -5,7 +5,7 @@ import { discover } from './discover.mjs';
 test('discovers all opted-in containers with per-platform builds', () => {
   const { containerBuilds, containerImages } = discover();
   const images = containerImages.map((i) => i.image).sort();
-  assert.deepEqual(images, ['control', 'dashboard', 'runtime']);
+  assert.deepEqual(images, ['control', 'dashboard', 'docs', 'runtime']);
   for (const image of images) {
     const builds = containerBuilds.filter((b) => b.image === image);
     assert.deepEqual(builds.map((b) => b.platform).sort(), ['linux/amd64', 'linux/arm64']);
