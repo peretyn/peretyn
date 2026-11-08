@@ -18,6 +18,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --config.verify-deps-before-run=false
 COPY --from=pruner /workspace/out/full/ ./
 COPY tsconfig.base.json ./
+COPY api ./api
 RUN mkdir -p services/docs/public
 
 ENV NEXT_OUTPUT=standalone
@@ -31,6 +32,7 @@ ARG VERSION=dev
 LABEL org.opencontainers.image.source="https://github.com/peretyn/peretyn" \
       org.opencontainers.image.version=$VERSION
 
+COPY --from=builder --chown=node:node /workspace/api ./api
 COPY --from=builder --chown=node:node /workspace/services/docs/public ./services/docs/public
 COPY --from=builder --chown=node:node /workspace/services/docs/.next/standalone ./
 COPY --from=builder --chown=node:node /workspace/services/docs/.next/static ./services/docs/.next/static
