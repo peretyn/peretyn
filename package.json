@@ -40,7 +40,8 @@
     "dash:add": "sh -c 'shadcn add -c services/dashboard \"$@\" && prettier --write packages/ui/src services/dashboard/src' --",
     "changeset": "changeset",
     "version": "changeset version && pnpm install --no-frozen-lockfile",
-    "release": "turbo run build && changeset publish"
+    "release": "turbo run build && changeset publish",
+    "docs:dev": "turbo run dev --filter=@peretyn/docs"
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
