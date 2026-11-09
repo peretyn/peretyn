@@ -1,0 +1,84 @@
+---
+title: Self-hosting
+description: Run the Peretyn stack on your own server with Docker Compose.
+---
+
+The Compose stack runs Peretyn on one host: the runtime, the control plane, the dashboard, PostgreSQL, and Caddy in front of them. Caddy gets a TLS certificate for your domain, and it is the only service that publishes ports.
+
+You need a host with Docker and a domain name.
+
+## Install
+
+### 1. Point your domain at the host
+
+Create a DNS record from your domain to the host, and open ports 80 and 443.
+
+### 2. Download the files
+
+```sh
+mkdir -p /opt/peretyn && cd /opt/peretyn
+base=https://raw.githubusercontent.com/peretyn/peretyn/main/deploy
+curl -fsSLO "$base/compose.yaml"
+curl -fsSLO "$base/Caddyfile"
+curl -fsSL "$base/.env.example" -o .env
+```
+
+### 3. Fill in `.env`
+
+Set every variable that [Configuration](#configuration) marks as required. Generate each secret with `openssl rand -hex 32`.
+
+### 4. Start the stack
+
+```sh
+docker compose up -d
+```
+
+### 5. Enroll the first admin
+
+Sign-up is closed by default, so create the first account from the command line:
+
+```sh
+docker compose exec control node services/control/dist/scripts/enroll.js you@example.com 'password' 'Your Name' --admin
+```
+
+Enroll other people the same way, without `--admin`. Admins manage users through the better-auth admin endpoints under `/api/auth/admin/*`.
+
+## Configuration
+
+| Variable                  | Required | Description                                                                 |
+| ------------------------- | -------- | --------------------------------------------------------------------------- |
+| `PERETYN_TAG`             | Yes      | The server version to run, such as the latest `@peretyn/runtime` release.   |
+| `PERETYN_DOMAIN`          | Yes      | The domain that Caddy serves, such as `peretyn.example.com`.                |
+| `PERETYN_DASHBOARD_URL`   | Yes      | The public URL of the dashboard, such as `https://peretyn.example.com`.     |
+| `POSTGRES_PASSWORD`       | Yes      | The password of the PostgreSQL user.                                        |
+| `PERETYN_INTERNAL_SECRET` | Yes      | The secret that the control plane uses to call the runtime.                 |
+| `BETTER_AUTH_SECRET`      | Yes      | The secret that signs sessions.                                             |
+| `PERETYN_RESEND_API_KEY`  | No       | A [Resend](https://resend.com) API key. Without it, Peretyn sends no email. |
+| `PERETYN_EMAIL_FROM`      | No       | The sender of auth email. Defaults to `no-reply@peretyn.dev`.               |
+| `PERETYN_ALLOW_SIGNUP`    | No       | `true` lets anyone sign up. Defaults to `false`.                            |
+| `PERETYN_REQUEST_TIMEOUT` | No       | How long the runtime spends on one request. Defaults to `5s`.               |
+
+## Connect the SDK and the CLI
+
+Caddy serves the runtime and the dashboard on the same domain. Use your domain wherever the docs use `app.peretyn.dev`:
+
+```sh
+export PERETYN_RUNTIME_URL=https://peretyn.example.com
+export PERETYN_CONTROL_URL=https://peretyn.example.com
+```
+
+## Upgrade
+
+Change `PERETYN_TAG` in `.env`, then pull the new images and restart:
+
+```sh
+docker compose pull && docker compose up -d
+```
+
+## Back up
+
+All data is in the `postgres-data` volume. Back it up with `pg_dump`:
+
+```sh
+docker compose exec postgres pg_dump -U peretyn peretyn > peretyn.sql
+```

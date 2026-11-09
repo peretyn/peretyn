@@ -1,0 +1,22 @@
+---
+title: Errors
+description: What the SDK throws, and how to fail closed.
+---
+
+| Error                     | Thrown when                                                                                                     |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `PeretynError`            | The runtime answered with an error status. It has `status` and `body`. `assert` throws it with `403` on a deny. |
+| `PeretynUnavailableError` | The SDK couldn't reach the runtime.                                                                             |
+| `PeretynTimeoutError`     | The call ran out of `timeoutMs`. It extends `PeretynUnavailableError`.                                          |
+
+## Fail closed or fail open
+
+When Peretyn is unreachable, only you know whether your application should allow or deny. So the SDK throws instead of guessing.
+
+This function denies whenever Peretyn can't answer:
+
+<include>../../../snippets/sdk/fail-closed.ts</include>
+
+The script prints `allowed`, because Alice owns the roadmap and the runtime is up. While the runtime is down, `canView` returns `false`.
+
+Return `true` in place of `false` to fail open. Any other error still throws, because it means that the request itself was wrong.

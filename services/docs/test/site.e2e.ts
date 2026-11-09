@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, inject, it } from 'vitest';
 
 const INTERNAL_LINK = /href="(\/[^"#?]*)/g;
 const SKIPPED_PREFIXES = ['/_next/', '/api/'];
+const SECTIONS = ['/quickstart', '/concepts', '/sdk', '/cli', '/self-hosting'];
 
 interface CrawledPage {
   status: number;
@@ -36,9 +37,8 @@ describe('the docs site', () => {
     expect(broken).toEqual([]);
   });
 
-  it('links to the Quickstart and Concepts pages', () => {
-    expect(pages.has('/quickstart')).toBe(true);
-    expect(pages.has('/concepts')).toBe(true);
+  it.each(SECTIONS)('links to the %s section', (section) => {
+    expect(pages.has(section)).toBe(true);
   });
 
   it('renders an HTTP API reference page from the OpenAPI spec', () => {

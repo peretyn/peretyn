@@ -1,0 +1,60 @@
+---
+title: SDK
+description: Install the TypeScript SDK and create a client.
+---
+
+`@peretyn/sdk` is the TypeScript client for the Peretyn runtime. It needs Node.js 24 or later.
+
+```sh
+npm install @peretyn/sdk
+```
+
+## Write a schema
+
+Every example in the SDK guides uses this schema. A document has owners, editors and viewers. Owners and editors can edit it, and all three can view it:
+
+<include>../../../snippets/sdk/schema.ts</include>
+
+## Create a client
+
+Pass your schema's type to `peretyn` and give it the API key of an environment. With the schema type, the compiler rejects any type or relation name that the schema doesn't declare.
+
+<include>../../../snippets/sdk/client.ts</include>
+
+`me` returns the scope of the API key: its environment, its project and the store that holds its tuples. The script prints `development`.
+
+The API key selects the environment, so you never pass a project or environment id.
+
+## Options
+
+| Option           | Default                                              |
+| ---------------- | ---------------------------------------------------- |
+| `token`          | Required. An API key, `prn_live_…` or `prn_test_…`.  |
+| `baseUrl`        | `$PERETYN_RUNTIME_URL`, else `http://localhost:8080` |
+| `timeoutMs`      | `1000`. `0` disables the timeout.                    |
+| `retries`        | `2`. `0` disables retries.                           |
+| `retryBackoffMs` | `50`                                                 |
+
+`peretyn` throws when `baseUrl` is not a valid URL.
+
+`withToken` returns a client with the same options and a different API key. Use it when one process serves more than one environment.
+
+## Timeouts and retries
+
+`timeoutMs` is the budget for a whole call, across every attempt and the time it takes to read the response. A check costs the runtime tens of microseconds, so most of the budget goes to the network. Raise it for `lookupResources` over large result sets.
+
+The SDK retries network errors, `429` and every `5xx` except `504`, as long as the budget lasts. It retries a write only when the write is idempotent. See [Idempotent writes](/sdk/tuples#idempotent-writes).
+
+## Next steps
+
+<Cards>
+  <Card title="Checks" href="/sdk/checks">
+    Ask whether a subject can do something, one check or many at a time.
+  </Card>
+  <Card title="Tuples" href="/sdk/tuples">
+    Write and delete the facts that checks are decided from.
+  </Card>
+  <Card title="Errors" href="/sdk/errors">
+    Decide what your application does when Peretyn can't answer.
+  </Card>
+</Cards>

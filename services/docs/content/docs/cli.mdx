@@ -1,0 +1,117 @@
+---
+title: CLI
+description: Compile a schema, publish it to an environment and test it.
+---
+
+The `peretyn` CLI compiles your schema into a model, publishes the model to an environment, and checks assertions against it.
+
+## Install
+
+Download the binary for your platform from the latest `@peretyn/go-cli` release on [GitHub](https://github.com/peretyn/peretyn/releases):
+
+| Platform             | File                   |
+| -------------------- | ---------------------- |
+| Linux, x86-64        | `peretyn-linux-amd64`  |
+| Linux, ARM64         | `peretyn-linux-arm64`  |
+| macOS, Apple silicon | `peretyn-darwin-arm64` |
+
+Rename it to `peretyn`, make it executable, and put it on your `PATH`. `peretyn build` also needs Node.js 24 or later, because it runs your schema module.
+
+## Configure
+
+The CLI reads settings from flags, then environment variables, then `peretyn.json` in the current directory. The first one that is set wins.
+
+| Setting     | Flag        | Variable              | `peretyn.json` | Default                 |
+| ----------- | ----------- | --------------------- | -------------- | ----------------------- |
+| API key     | `--token`   | `PERETYN_TOKEN`       |                |                         |
+| Control URL | `--control` | `PERETYN_CONTROL_URL` | `control`      | `http://localhost:3001` |
+| Runtime URL | `--runtime` | `PERETYN_RUNTIME_URL` | `runtime`      | `http://localhost:8080` |
+| Model path  | `--model`   |                       | `model`        | `peretyn.model.json`    |
+
+Commit `peretyn.json` with your schema, and keep the API key in the environment:
+
+```json title="peretyn.json"
+{
+  "control": "https://app.peretyn.dev",
+  "runtime": "https://app.peretyn.dev",
+  "model": "peretyn.model.json"
+}
+```
+
+Set `PERETYN_CONFIG` to read the file from another path.
+
+The API key identifies the environment, so no command takes a project or environment id.
+
+## `peretyn build`
+
+Compiles a TypeScript schema module into a model file. It needs no API key.
+
+```sh
+peretyn build --schema schema.ts
+```
+
+| Flag             | Default                                      |
+| ---------------- | -------------------------------------------- |
+| `-s`, `--schema` | Required. The schema module.                 |
+| `-e`, `--export` | `schema`. The named export to read.          |
+| `-o`, `--out`    | The model path from [Configure](#configure). |
+
+## `peretyn plan`
+
+Compares the model file with the model that the environment runs, and prints what `apply` would change:
+
+```sh
+peretyn plan
+```
+
+```txt
+plan: changes to apply
+  ~ type document
+      + editor
+
+run: peretyn apply --label <label>
+```
+
+## `peretyn apply`
+
+Publishes the model file to the environment under a label. `--label` is required.
+
+```sh
+peretyn apply --label v2
+```
+
+## `peretyn test`
+
+Runs the checks in an assertions file against the environment, and fails when a verdict differs from the one you expect:
+
+```json title="peretyn.assertions.json"
+{
+  "assertions": [
+    {
+      "subject": "user:alice",
+      "relation": "can_view",
+      "object": "document:roadmap",
+      "expect": true
+    },
+    {
+      "subject": "user:bob",
+      "relation": "can_edit",
+      "object": "document:roadmap",
+      "expect": false
+    }
+  ]
+}
+```
+
+```sh
+peretyn test
+```
+
+```txt
+✓ document:roadmap#can_view@user:alice  true
+✓ document:roadmap#can_edit@user:bob  false
+
+2 passed, 0 failed (2 total)
+```
+
+`--file` reads the assertions from another path. The default is `peretyn.assertions.json`.

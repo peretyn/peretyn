@@ -1,0 +1,68 @@
+---
+title: Checks
+description: Ask whether a subject has a relation or permission on an object.
+---
+
+The examples on this page run after the tuples from [Write tuples](/sdk/tuples#write-tuples): Alice owns the roadmap, and Bob can view it.
+
+## Check
+
+`check` returns the verdict in `allowed`. The relation can be a relation or a permission.
+
+<include>../../../snippets/sdk/check.ts</include>
+
+The script prints `allowed`. Bob is a viewer, and viewers can view.
+
+## Assert
+
+`assert` runs the same check, and throws a `PeretynError` with status `403` when the verdict is denied. Use it where a deny should stop the request, such as at the top of an HTTP handler.
+
+<include>../../../snippets/sdk/assert.ts</include>
+
+The script prints `denied`. Bob is a viewer, and viewers can't edit.
+
+## Batch check
+
+`batchCheck` runs many checks in one call. Each result carries the check it answers, in the order you passed them.
+
+<include>../../../snippets/sdk/batch-check.ts</include>
+
+The script prints:
+
+```txt
+alice: allowed
+bob: denied
+```
+
+The SDK sends the checks in batches of 50, at most 4 batches at a time, all within one `timeoutMs`. If one batch fails, the call rejects and the SDK cancels the rest.
+
+A check that the runtime can't evaluate comes back with `allowed: false` and an `error` message.
+
+## Lookups
+
+A lookup lists what a check would allow, instead of answering for one subject and one object:
+
+- `lookupResources` returns the ids of the objects of one type on which a subject has a relation.
+- `lookupSubjects` returns the subjects of one type that have a relation on an object.
+
+<include>../../../snippets/sdk/lookup.ts</include>
+
+The script prints:
+
+```txt
+bob can view: roadmap
+can edit the roadmap: user:alice
+```
+
+`lookupResources` returns ids without the type. `lookupSubjects` returns full subjects, such as `user:alice`, `team:design#member`, or `user:*` for a wildcard.
+
+## Options
+
+Checks and lookups accept these options:
+
+| Option             | Effect                                                                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `contextualTuples` | Tuples that count for this call only. Peretyn doesn't store them.                                                                        |
+| `consistency`      | `MINIMIZE_LATENCY` (default) can answer from a cache. `HIGHER_CONSISTENCY` skips the cache, so the call sees writes made just before it. |
+
+`expand` returns the tree of relations that grant a permission on an object. Use it to explain why a check was allowed.
