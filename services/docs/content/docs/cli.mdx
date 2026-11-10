@@ -7,7 +7,28 @@ The `peretyn` CLI compiles your schema into a model, publishes the model to an e
 
 ## Install
 
-Download the binary for your platform from the latest `@peretyn/go-cli` release on [GitHub](https://github.com/peretyn/peretyn/releases):
+```sh
+curl -fsSL https://peretyn.dev/install-cli | sh
+```
+
+The installer downloads the latest `@peretyn/go-cli` release for your platform (Linux x86-64 or ARM64, macOS on Apple silicon), checks it against the release's `SHA256SUMS`, and installs it to `~/.local/bin/peretyn`. Run it again to upgrade. `peretyn build` also needs Node.js 24 or later, because it runs your schema module.
+
+| Variable              | Description                                        |
+| --------------------- | -------------------------------------------------- |
+| `PERETYN_CLI_VERSION` | The version to install. Defaults to the latest.    |
+| `PERETYN_BIN_DIR`     | The install directory. Defaults to `~/.local/bin`. |
+
+### Verify the binary
+
+Release binaries carry signed build provenance. Check that a binary was built by this repository's release workflow:
+
+```sh
+gh attestation verify ~/.local/bin/peretyn -R peretyn/peretyn
+```
+
+### Install by hand
+
+Download the binary for your platform from the latest `@peretyn/go-cli` release on [GitHub](https://github.com/peretyn/peretyn/releases), with its `SHA256SUMS`:
 
 | Platform             | File                   |
 | -------------------- | ---------------------- |
@@ -15,7 +36,7 @@ Download the binary for your platform from the latest `@peretyn/go-cli` release 
 | Linux, ARM64         | `peretyn-linux-arm64`  |
 | macOS, Apple silicon | `peretyn-darwin-arm64` |
 
-Rename it to `peretyn`, make it executable, and put it on your `PATH`. `peretyn build` also needs Node.js 24 or later, because it runs your schema module.
+Check it with `sha256sum -c SHA256SUMS --ignore-missing`, rename it to `peretyn`, make it executable, and put it on your `PATH`.
 
 ## Configure
 

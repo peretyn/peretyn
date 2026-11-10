@@ -127,3 +127,27 @@ jobs:
         with:
           name: installer-stack-logs
           path: stack.log
+
+  cli-installer:
+    name: CLI installer (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: ShellCheck
+        if: ${{ matrix.runner == 'ubuntu-latest' }}
+        run: shellcheck packages/go-cli/install.sh
+
+      - name: Install
+        env:
+          PERETYN_BIN_DIR: ${{ runner.temp }}/bin
+        run: sh packages/go-cli/install.sh </dev/null
+
+      - name: Installed binary runs
+        run: '"$RUNNER_TEMP/bin/peretyn" --version'
