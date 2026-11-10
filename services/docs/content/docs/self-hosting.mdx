@@ -52,6 +52,16 @@ sha256sum -c SHA256SUMS
 sh install.sh
 ```
 
+### Verify the images
+
+Release images carry signed build provenance. Check that an image was built by this repository's release workflow:
+
+```sh
+gh attestation verify oci://ghcr.io/peretyn/peretyn/runtime:<version> -R peretyn/peretyn
+```
+
+The same works for `control` and `dashboard`.
+
 ### Install by hand
 
 #### 1. Download the files
