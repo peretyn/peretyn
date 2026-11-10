@@ -1,5 +1,11 @@
 # @peretyn/docs
 
+## 0.3.0
+
+### Minor Changes
+
+- f1766b8: Document the one-line self-hosting installer, its unattended mode and how to verify it before running.
+
 ## 0.2.1
 
 ### Patch Changes
