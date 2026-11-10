@@ -1,5 +1,11 @@
 # @peretyn/docs
 
+## 0.2.1
+
+### Patch Changes
+
+- 145c02f: Use the peretyn.dev green for links, the active page and section labels.
+
 ## 0.2.0
 
 ### Minor Changes
