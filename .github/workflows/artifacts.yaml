@@ -253,3 +253,34 @@ jobs:
           if compgen -G "/tmp/bin/*" >/dev/null; then
             gh release upload "$CHANNEL" /tmp/bin/* --clobber --repo "$GITHUB_REPOSITORY"
           fi
+
+  installer:
+    name: Attach installer to runtime release
+    if: ${{ inputs.channel == 'stable' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Upload install.sh and SHA256SUMS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: deploy
+        run: |
+          tag=$(git tag --points-at HEAD '@peretyn/runtime@*')
+          if [ -z "$tag" ]; then
+            echo "no runtime release at this commit"
+            exit 0
+          fi
+          sha256sum install.sh > SHA256SUMS
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --title "$tag" --generate-notes \
+              --verify-tag --repo "$GITHUB_REPOSITORY"
+          fi
+          gh release upload "$tag" install.sh SHA256SUMS --clobber --repo "$GITHUB_REPOSITORY"

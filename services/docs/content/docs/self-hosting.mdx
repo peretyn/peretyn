@@ -5,15 +5,56 @@ description: Run the Peretyn stack on your own server with Docker Compose.
 
 The Compose stack runs Peretyn on one host: the runtime, the control plane, the dashboard, PostgreSQL, and Caddy in front of them. Caddy gets a TLS certificate for your domain, and it is the only service that publishes ports.
 
-You need a host with Docker and a domain name.
+You need a Linux host with Docker, a domain whose DNS record points at the host, and ports 80 and 443 open.
 
 ## Install
 
-### 1. Point your domain at the host
+Run the installer as root:
 
-Create a DNS record from your domain to the host, and open ports 80 and 443.
+```sh
+curl -fsSL https://raw.githubusercontent.com/peretyn/peretyn/main/deploy/install.sh | sh
+```
 
-### 2. Download the files
+It asks for your domain and the first admin's email, then:
+
+- pins the latest `@peretyn/runtime` release and downloads `compose.yaml` and the `Caddyfile` from that release into `/opt/peretyn`,
+- generates every secret into `.env`, readable only by its owner,
+- starts the stack,
+- creates the admin account and prints its password once.
+
+To install somewhere else, or as a user in the `docker` group, set `PERETYN_DIR` to a directory you own.
+
+### Unattended install
+
+Every question has a variable. Set them and the installer asks nothing:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/peretyn/peretyn/main/deploy/install.sh |
+  PERETYN_DOMAIN=peretyn.example.com PERETYN_ADMIN_EMAIL=you@example.com PERETYN_ADMIN_NAME='Your Name' PERETYN_RESEND_API_KEY= sh
+```
+
+| Variable                 | Description                                                            |
+| ------------------------ | ---------------------------------------------------------------------- |
+| `PERETYN_DOMAIN`         | The domain that Caddy serves. Required.                                |
+| `PERETYN_ADMIN_EMAIL`    | The first admin's email. Required.                                     |
+| `PERETYN_ADMIN_NAME`     | The first admin's name. Set it empty to use the email's local part.    |
+| `PERETYN_RESEND_API_KEY` | A [Resend](https://resend.com) API key. Set it empty to send no email. |
+| `PERETYN_TAG`            | The version to install. Defaults to the latest release.                |
+| `PERETYN_DIR`            | The install directory. Defaults to `/opt/peretyn`.                     |
+
+### Verify before running
+
+Each `@peretyn/runtime` release carries `install.sh` and its `SHA256SUMS`. Download both from the release, check the script, read it, then run it:
+
+```sh
+gh release download '@peretyn/runtime@<version>' -R peretyn/peretyn -p install.sh -p SHA256SUMS
+sha256sum -c SHA256SUMS
+sh install.sh
+```
+
+### Install by hand
+
+#### 1. Download the files
 
 ```sh
 mkdir -p /opt/peretyn && cd /opt/peretyn
@@ -23,17 +64,17 @@ curl -fsSLO "$base/Caddyfile"
 curl -fsSL "$base/.env.example" -o .env
 ```
 
-### 3. Fill in `.env`
+#### 2. Fill in `.env`
 
 Set every variable that [Configuration](#configuration) marks as required. Generate each secret with `openssl rand -hex 32`.
 
-### 4. Start the stack
+#### 3. Start the stack
 
 ```sh
 docker compose up -d
 ```
 
-### 5. Enroll the first admin
+#### 4. Enroll the first admin
 
 Sign-up is closed by default, so create the first account from the command line:
 
@@ -41,7 +82,15 @@ Sign-up is closed by default, so create the first account from the command line:
 docker compose exec control node services/control/dist/scripts/enroll.js you@example.com 'password' 'Your Name' --admin
 ```
 
-Enroll other people the same way, without `--admin`. Admins manage users through the better-auth admin endpoints under `/api/auth/admin/*`.
+## Enroll more people
+
+Create other accounts the same way, without `--admin`, from the install directory:
+
+```sh
+docker compose exec control node services/control/dist/scripts/enroll.js teammate@example.com 'password' 'Their Name'
+```
+
+Admins manage users through the better-auth admin endpoints under `/api/auth/admin/*`.
 
 ## Configuration
 
@@ -69,7 +118,9 @@ export PERETYN_CONTROL_URL=https://peretyn.example.com
 
 ## Upgrade
 
-Change `PERETYN_TAG` in `.env`, then pull the new images and restart:
+Run the installer again. It keeps `.env` and its secrets, moves `PERETYN_TAG` and the deploy files to the latest release, then pulls the new images and restarts. Set `PERETYN_TAG` to pick a version.
+
+By hand: change `PERETYN_TAG` in `.env`, then pull the new images and restart:
 
 ```sh
 docker compose pull && docker compose up -d
