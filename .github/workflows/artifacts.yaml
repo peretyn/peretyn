@@ -199,6 +199,9 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     steps:
       - uses: actions/checkout@v7
         if: ${{ needs.discover.outputs.binaries != '[]' }}
@@ -233,6 +236,12 @@ jobs:
           done
           ls -la /tmp/bin
 
+      - name: Attest build provenance
+        if: ${{ needs.discover.outputs.binaries != '[]' }}
+        uses: actions/attest@v4
+        with:
+          subject-path: /tmp/bin/*
+
       - name: Attach to stable package releases
         if: ${{ inputs.channel == 'stable' }}
         env:
@@ -242,6 +251,11 @@ jobs:
           echo "$BINARIES" | jq -r '[.[] | {pkg, version}] | unique | .[] | "\(.pkg)@\(.version)"' \
             | while read -r tag; do
                 echo "uploading to release $tag"
+                names=$(echo "$BINARIES" | jq -r --arg tag "$tag" \
+                  '.[] | select("\(.pkg)@\(.version)" == $tag) | .asset')
+                sums_dir=$(mktemp -d)
+                # shellcheck disable=SC2086
+                (cd /tmp/bin && sha256sum $names) > "$sums_dir/SHA256SUMS"
                 assets=$(echo "$BINARIES" | jq -r --arg tag "$tag" \
                   '.[] | select("\(.pkg)@\(.version)" == $tag) | "/tmp/bin/\(.asset)"')
                 if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -249,7 +263,7 @@ jobs:
                     --verify-tag --repo "$GITHUB_REPOSITORY"
                 fi
                 # shellcheck disable=SC2086
-                gh release upload "$tag" $assets --clobber --repo "$GITHUB_REPOSITORY"
+                gh release upload "$tag" $assets "$sums_dir/SHA256SUMS" --clobber --repo "$GITHUB_REPOSITORY"
               done
 
       - name: Update rolling channel prerelease
@@ -269,7 +283,8 @@ jobs:
             gh release edit "$CHANNEL" --title "$title" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           fi
           if compgen -G "/tmp/bin/*" >/dev/null; then
-            gh release upload "$CHANNEL" /tmp/bin/* --clobber --repo "$GITHUB_REPOSITORY"
+            (cd /tmp/bin && sha256sum -- *) > /tmp/SHA256SUMS
+            gh release upload "$CHANNEL" /tmp/bin/* /tmp/SHA256SUMS --clobber --repo "$GITHUB_REPOSITORY"
           fi
 
   installer:
