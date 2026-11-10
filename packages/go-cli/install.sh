@@ -50,8 +50,16 @@ require_supported_platform() {
   fail "no peretyn CLI build for $1. Supported: $SUPPORTED_PLATFORMS."
 }
 
+fetch_releases() {
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    download -H "Authorization: Bearer $GITHUB_TOKEN" "$RELEASES_API"
+    return
+  fi
+  download "$RELEASES_API"
+}
+
 latest_cli_version() {
-  download "$RELEASES_API" |
+  fetch_releases |
     grep -o "\"tag_name\": *\"${CLI_TAG_PREFIX}[^\"]*\"" |
     head -n 1 |
     sed "s|.*${CLI_TAG_PREFIX}\([^\"]*\)\"|\1|"
@@ -61,7 +69,7 @@ resolve_version() {
   if [ -z "${PERETYN_CLI_VERSION:-}" ]; then
     PERETYN_CLI_VERSION=$(latest_cli_version)
   fi
-  [ -n "$PERETYN_CLI_VERSION" ] || fail "could not find the latest peretyn CLI release."
+  [ -n "$PERETYN_CLI_VERSION" ] || fail "could not find the latest peretyn CLI release. GitHub may be rate-limiting this address: set PERETYN_CLI_VERSION to a version, or GITHUB_TOKEN to a GitHub token, and run again."
 }
 
 release_url() {
