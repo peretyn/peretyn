@@ -7,6 +7,6 @@
 
 :root,
 .dark {
-  --color-fd-primary: var(--foreground);
+  --color-fd-primary: var(--ring);
   --color-fd-primary-foreground: var(--background);
 }
