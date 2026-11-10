@@ -140,6 +140,9 @@ jobs:
     timeout-minutes: 10
     permissions:
       packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     strategy:
       fail-fast: false
       matrix:
@@ -172,6 +175,21 @@ jobs:
           fi
           # shellcheck disable=SC2046,SC2086
           docker buildx imagetools create $tags $(printf "$image@sha256:%s " *)
+
+      - id: manifest
+        name: Resolve manifest list digest
+        run: |
+          image="ghcr.io/${{ github.repository }}/${{ matrix.image }}"
+          digest=$(docker buildx imagetools inspect "$image:${{ matrix.version }}" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "name=$image" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.manifest.outputs.name }}
+          subject-digest: ${{ steps.manifest.outputs.digest }}
+          push-to-registry: true
 
   binaries:
     name: Binaries and channel release
