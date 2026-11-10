@@ -1,0 +1,31 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [SDK, CLI, Runtime, Control, Dashboard, Self-hosting, Docs]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: '@peretyn/sdk 0.1.1'
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The smallest schema, tuples and calls that show the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
