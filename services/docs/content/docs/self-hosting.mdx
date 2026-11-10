@@ -12,7 +12,7 @@ You need a Linux host with Docker, a domain whose DNS record points at the host,
 Run the installer as root:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/peretyn/peretyn/main/deploy/install.sh | sh
+curl -fsSL https://peretyn.dev/install | sh
 ```
 
 It asks for your domain and the first admin's email, then:
@@ -29,7 +29,7 @@ To install somewhere else, or as a user in the `docker` group, set `PERETYN_DIR`
 Every question has a variable. Set them and the installer asks nothing:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/peretyn/peretyn/main/deploy/install.sh |
+curl -fsSL https://peretyn.dev/install |
   PERETYN_DOMAIN=peretyn.example.com PERETYN_ADMIN_EMAIL=you@example.com PERETYN_ADMIN_NAME='Your Name' PERETYN_RESEND_API_KEY= sh
 ```
 
