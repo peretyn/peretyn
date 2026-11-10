@@ -1,5 +1,12 @@
 # @peretyn/docs
 
+## 0.3.1
+
+### Patch Changes
+
+- 50ef34f: Document how to verify the signed build provenance of release images.
+- b859ca7: Use peretyn.dev/install in the self-hosting install commands.
+
 ## 0.3.0
 
 ### Minor Changes
