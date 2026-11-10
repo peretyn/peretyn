@@ -4,13 +4,13 @@
   "private": true,
   "description": "Peretyn CLI — compile a schema module and plan/apply it against a control plane environment.",
   "scripts": {
-    "go:build": "go build -trimpath -o bin/peretyn .",
-    "go:test": "go test -race -count=1 ./...",
+    "go:build": "GOWORK=off go build -trimpath -o bin/peretyn .",
+    "go:test": "GOWORK=off go test -race -count=1 ./...",
     "go:vet": "GOWORK=off go vet ./...",
     "build": "pnpm go:build",
     "test": "pnpm go:test",
     "dev": "go run .",
-    "go:lint": "golangci-lint run --allow-parallel-runners ./...",
+    "go:lint": "GOWORK=off golangci-lint run --allow-parallel-runners ./...",
     "lint": "pnpm go:lint"
   },
   "binaryConfig": {
