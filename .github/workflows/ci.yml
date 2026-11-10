@@ -77,3 +77,53 @@ jobs:
 
       - name: Integration tests (Postgres)
         run: pnpm go:test:integration
+
+  installer:
+    name: Installer
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PERETYN_DIR: ${{ github.workspace }}/../peretyn-install
+      PERETYN_DOMAIN: localhost
+      PERETYN_ADMIN_EMAIL: admin@example.com
+      PERETYN_ADMIN_NAME: Admin
+      PERETYN_RESEND_API_KEY: ''
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: ShellCheck
+        run: shellcheck deploy/install.sh
+
+      - name: Install unattended
+        run: sh deploy/install.sh </dev/null | tee install.log
+
+      - name: Runtime answers through Caddy
+        run: test "$(curl -sk -o /dev/null -w '%{http_code}' -X POST https://localhost/v1/check)" = 401
+
+      - name: Dashboard answers through Caddy
+        run: test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost/)" = 307
+
+      - name: Admin signs in with the printed password
+        run: |
+          password=$(sed -n 's/^Password: //p' install.log)
+          echo "::add-mask::$password"
+          test "$(curl -sk -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H 'Origin: https://localhost' \
+            -d "{\"email\":\"$PERETYN_ADMIN_EMAIL\",\"password\":\"$password\"}" https://localhost/api/auth/sign-in/email)" = 200
+
+      - name: Running again upgrades and keeps the secrets
+        run: |
+          before=$(grep -v '^PERETYN_TAG=' "$PERETYN_DIR/.env" | sha256sum)
+          sh deploy/install.sh </dev/null
+          after=$(grep -v '^PERETYN_TAG=' "$PERETYN_DIR/.env" | sha256sum)
+          test "$before" = "$after"
+
+      - name: Collect stack logs
+        if: always()
+        run: docker compose --project-directory "$PERETYN_DIR" logs --no-color > stack.log 2>&1 || true
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: installer-stack-logs
+          path: stack.log
