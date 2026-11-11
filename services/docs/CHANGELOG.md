@@ -1,5 +1,11 @@
 # @peretyn/docs
 
+## 0.4.0
+
+### Minor Changes
+
+- 7b975c2: Document the one-line CLI installer and how to verify the CLI binary.
+
 ## 0.3.1
 
 ### Patch Changes
