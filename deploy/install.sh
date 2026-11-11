@@ -79,8 +79,16 @@ warn_when_domain_does_not_resolve() {
   say "Warning: $PERETYN_DOMAIN does not resolve yet. Caddy keeps retrying the certificate once DNS points at this host."
 }
 
+fetch_releases() {
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    download -H "Authorization: Bearer $GITHUB_TOKEN" "$RELEASES_API"
+    return
+  fi
+  download "$RELEASES_API"
+}
+
 latest_runtime_version() {
-  download "$RELEASES_API" |
+  fetch_releases |
     grep -o "\"tag_name\": *\"${RUNTIME_TAG_PREFIX}[^\"]*\"" |
     head -n 1 |
     sed "s|.*${RUNTIME_TAG_PREFIX}\([^\"]*\)\"|\1|"
@@ -90,7 +98,7 @@ resolve_version() {
   if [ -z "${PERETYN_TAG:-}" ]; then
     PERETYN_TAG=$(latest_runtime_version)
   fi
-  [ -n "$PERETYN_TAG" ] || fail "could not find the latest peretyn release."
+  [ -n "$PERETYN_TAG" ] || fail "could not find the latest peretyn release. GitHub may be rate-limiting this address: set PERETYN_TAG to a version, or GITHUB_TOKEN to a GitHub token, and run again."
 }
 
 deploy_files_url() {
