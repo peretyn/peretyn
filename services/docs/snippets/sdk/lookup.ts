@@ -1,5 +1,5 @@
 import { peretyn } from '@peretyn/sdk';
-import type { schema } from './schema';
+import type { schema } from './schema.ts';
 
 const authz = peretyn<typeof schema>({ token: process.env.PERETYN_TOKEN! });
 
