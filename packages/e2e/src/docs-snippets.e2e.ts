@@ -1,4 +1,4 @@
-import { join, resolve } from 'node:path';
+import { extname, join, resolve } from 'node:path';
 import { execa } from 'execa';
 import { beforeAll, describe, expect, inject, it } from 'vitest';
 import { schemaToOpenFGA, type PeretynSchema } from '@peretyn/sdk';
@@ -6,6 +6,7 @@ import { provisionEnvironment } from './runtime-admin.js';
 
 const SNIPPETS_DIR = resolve(import.meta.dirname, '../../../services/docs/snippets');
 const ENVIRONMENT_NAME = 'development';
+const SHELL_SCRIPT_EXTENSION = '.sh';
 
 interface ScriptRun {
   script: string;
@@ -28,6 +29,11 @@ const SNIPPET_RUNS: Record<string, ScriptRun[]> = {
     { script: 'fail-closed.ts', output: 'allowed' },
     { script: 'delete.ts', output: 'denied' },
   ],
+  http: [
+    { script: 'write.sh', output: '{}' },
+    { script: 'check.sh', output: '{"allowed":true, "resolution":""}' },
+    { script: 'list-objects.sh', output: '{"objects":["document:specs"]}' },
+  ],
 };
 
 async function loadSchema(snippet: string): Promise<PeretynSchema> {
@@ -45,8 +51,12 @@ async function provisionSnippetEnvironment(snippet: string): Promise<string> {
   });
 }
 
+function interpreterFor(script: string): string {
+  return extname(script) === SHELL_SCRIPT_EXTENSION ? 'sh' : 'node';
+}
+
 async function runScript(snippet: string, { script, token }: { script: string; token: string }) {
-  const { stdout } = await execa('node', [join(SNIPPETS_DIR, snippet, script)], {
+  const { stdout } = await execa(interpreterFor(script), [join(SNIPPETS_DIR, snippet, script)], {
     env: { PERETYN_TOKEN: token, PERETYN_RUNTIME_URL: inject('runtimeUrl') },
   });
   return stdout.trim();

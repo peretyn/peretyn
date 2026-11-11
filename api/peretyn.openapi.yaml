@@ -13,6 +13,8 @@ info:
     Store/model provisioning lives on the runtime's internal listener and is not
     part of this public contract.
 servers:
+  - url: https://app.peretyn.dev
+    description: Hosted runtime
   - url: http://localhost:8080
     description: Local runtime
 security:
