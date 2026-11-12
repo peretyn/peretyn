@@ -1,3 +1,13 @@
 {
-  "pages": ["index", "quickstart", "concepts", "sdk", "cli", "self-hosting", "limits", "reference"]
+  "pages": [
+    "index",
+    "quickstart",
+    "concepts",
+    "roles",
+    "sdk",
+    "cli",
+    "self-hosting",
+    "limits",
+    "reference"
+  ]
 }

@@ -1,0 +1,120 @@
+---
+title: Roles and permissions (RBAC)
+description: Model roles and permissions (RBAC) with Peretyn, from global admins to per-project sharing.
+---
+
+You have checks like `if (user.role === 'admin')` scattered through your code. Peretyn replaces them with one call, `check`, and keeps the roles in one place.
+
+You do not need to know ReBAC to do this. In Peretyn, a role is a relation, and a permission is computed from roles.
+
+| RBAC word       | Peretyn word | Example                                       |
+| --------------- | ------------ | --------------------------------------------- |
+| role            | relation     | `admin`, `editor`, `viewer`                   |
+| permission      | permission   | `can_edit`                                    |
+| role assignment | tuple        | `user:grace` is `editor` on `project:billing` |
+| has permission? | check        | `authz.check(...)`                            |
+
+## Write the schema
+
+This schema has three levels of roles: platform, organization and project. A project belongs to one organization, and the platform owns every project.
+
+<include>../../snippets/roles/schema.ts</include>
+
+Each layer works like this:
+
+- **Global roles.** `platform` is a single object, such as `platform:main`. Its `admin` relation is the global admin role.
+- **Organization roles.** `organization` has `admin` and `member`. An organization role applies to every project in the organization.
+- **Project roles.** `project` has `admin`, `editor` and `viewer`. The `organization` and `platform` relations link a project to the objects it inherits roles from.
+- **Inheritance.** `via('organization', 'admin')` means that an admin of the project's organization is an admin of the project. `via('platform', 'admin')` does the same for platform admins.
+- **Permissions.** `can_manage` is granted to admins. `can_edit` is granted to editors and to anyone who can manage. `can_view` is granted to viewers, to anyone who can edit, and to organization members. So admin includes editor, and editor includes viewer.
+
+## Assign roles
+
+Assigning a role writes a tuple. This script makes `root` a platform admin, `ada` an organization admin, `sam` an organization member, `grace` a project editor and `linus` a project viewer. It also links the `billing` and `docs` projects to the platform and the organization:
+
+<include>../../snippets/roles/assign.ts</include>
+
+The script prints `assigned 9 tuples`.
+
+## Check permissions
+
+Ask for a permission, not a role. Your code does not need to know which role grants it:
+
+<include>../../snippets/roles/check.ts</include>
+
+The script prints:
+
+```txt
+ada can_manage project:billing: allowed
+root can_manage project:docs: allowed
+grace can_view project:billing: allowed
+linus can_edit project:billing: denied
+sam can_view project:docs: allowed
+sam can_edit project:docs: denied
+```
+
+`ada` and `root` have no tuple on any project. Ada is an organization admin and Root is a platform admin, so both inherit `admin` on every project. Grace is an editor, so Grace can view. Linus is a viewer, so Linus cannot edit. Sam is an organization member, so Sam can view every project in the organization but edit none.
+
+## Share one project
+
+Roles are not all-or-nothing. To give one person access to one project, write a project role for them. Here `mary` has no organization role and becomes a `viewer` of `billing` only:
+
+<include>../../snippets/roles/share.ts</include>
+
+The script prints:
+
+```txt
+mary can_view project:billing: allowed
+mary can_view project:docs: denied
+```
+
+To list everything a user can see, for example to build a project picker, use `lookupResources`:
+
+<include>../../snippets/roles/lookup.ts</include>
+
+The script prints `mary can view: billing`.
+
+## Moving existing checks
+
+Here is a typical role check:
+
+```ts
+function canEditProject(user: User, project: Project): boolean {
+  if (user.role === 'admin') return true;
+  if (project.admins.includes(user.id)) return true;
+  return project.editors.includes(user.id);
+}
+```
+
+With Peretyn, the function becomes a `check`. The role logic moves to the schema:
+
+```ts
+async function assertCanEditProject(userId: string, projectId: string): Promise<void> {
+  await authz.assert({
+    subject: { type: 'user', id: userId },
+    relation: 'can_edit',
+    object: { type: 'project', id: projectId },
+  });
+}
+```
+
+`assert` throws when the check is denied, so you can call it at the top of a handler. Use `check` when you want the boolean.
+
+To keep the answers right, move the writes too:
+
+- When you assign a role, write the tuple. This replaces setting `user.role` or pushing to `project.editors`.
+- When you remove a role, delete the tuple.
+- When you create a project, write its `organization` and `platform` tuples.
+
+See [Tuples](/sdk/tuples) for `write` and `deletes`.
+
+## Next steps
+
+<Cards>
+  <Card title="Checks" href="/sdk/checks">
+    Run checks, assertions and batch checks.
+  </Card>
+  <Card title="Tuples" href="/sdk/tuples">
+    Write and delete role assignments.
+  </Card>
+</Cards>
