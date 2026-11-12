@@ -1,5 +1,11 @@
 # @peretyn/docs
 
+## 0.6.0
+
+### Minor Changes
+
+- 1414c5f: Install on localhost over plain HTTP to evaluate Peretyn without a domain. The installer refuses IP addresses and warns about domains that can't get a public certificate.
+
 ## 0.5.0
 
 ### Minor Changes
