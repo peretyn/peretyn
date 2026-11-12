@@ -140,7 +140,7 @@ function snippet(last4: string | undefined, sample: Tuple | null): string {
   const object = parseRef(sample?.object) ?? { type: 'document', id: 'doc_99' };
   const relation = sample?.relation ?? 'can_edit';
   return `import { peretyn } from '@peretyn/sdk';
-import { schema } from './schema';
+import type { schema } from './schema.ts';
 
 // the type parameter is what gives check/write/lookup their autocomplete
 const client = peretyn<typeof schema>({

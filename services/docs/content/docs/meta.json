@@ -3,9 +3,11 @@
     "index",
     "quickstart",
     "concepts",
+    "roles",
     "sdk",
     "cli",
     "self-hosting",
+    "limits",
     "http-api",
     "reference"
   ]

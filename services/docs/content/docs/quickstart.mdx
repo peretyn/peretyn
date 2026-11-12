@@ -3,11 +3,21 @@ title: Quickstart
 description: Publish a schema and run your first check.
 ---
 
-You need Node.js 24 or later, and access to a Peretyn dashboard. The managed dashboard is at [app.peretyn.dev](https://app.peretyn.dev). If you run Peretyn yourself, use your own domain in place of `app.peretyn.dev` below.
+You need Node.js 24 or later, and access to a Peretyn dashboard. Set its address once, and the steps below use it:
+
+```sh
+export PERETYN_URL=https://app.peretyn.dev
+```
+
+If you run Peretyn yourself, use your own domain instead, such as `https://peretyn.example.com`.
 
 ## 1. Create a project
 
-In the dashboard, select **Create project**. Peretyn creates a `production` and a `development` environment and shows an API key for each. Copy the `development` key, which starts with `prn_test_`. The dashboard shows it only once.
+Open the dashboard at `$PERETYN_URL`. If you have no organization yet, select **Create organization** and name it. Then select **Create project**.
+
+Peretyn creates a `production` and a `development` environment and shows an API key for each. Copy the **Development key**, which starts with `prn_test_`. The dashboard shows each key only once.
+
+The dashboard opens on Production. To see the tuples that this quickstart writes, switch the environment selector to Development.
 
 ## 2. Set your environment
 
@@ -15,13 +25,30 @@ The SDK and the CLI both read these variables:
 
 ```sh
 export PERETYN_TOKEN=prn_test_...
-export PERETYN_RUNTIME_URL=https://app.peretyn.dev
-export PERETYN_CONTROL_URL=https://app.peretyn.dev
+export PERETYN_RUNTIME_URL=$PERETYN_URL
+export PERETYN_CONTROL_URL=$PERETYN_URL
 ```
 
-## 3. Install the SDK
+## 3. Install the CLI and the SDK
+
+Install the CLI. It goes to `~/.local/bin`, which must be on your `PATH`. See [CLI](/cli) for the options:
 
 ```sh
+curl -fsSL https://peretyn.dev/install-cli | sh
+```
+
+Then create a project directory. The schema and the scripts are ES modules, so set `type` to `module`:
+
+```sh
+mkdir peretyn-quickstart
+cd peretyn-quickstart
+npm init -y
+npm pkg set type=module
+```
+
+Install the SDK:
+
+```npm
 npm install @peretyn/sdk
 ```
 
@@ -33,7 +60,7 @@ A document has owners and viewers. Anyone who is an owner or a viewer can view i
 
 ## 5. Publish the schema
 
-Download the `peretyn` binary for your platform from the [latest release](https://github.com/peretyn/peretyn/releases) and put it on your `PATH`. Then compile the schema and publish it to the environment that your API key identifies:
+Compile the schema and publish it to the environment that your API key identifies:
 
 ```sh
 peretyn build --schema schema.ts

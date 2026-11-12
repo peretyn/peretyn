@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, inject, it } from 'vitest';
 const INTERNAL_LINK = /href="(\/[^"#?]*)/g;
 const SKIPPED_PREFIXES = ['/_next/', '/api/'];
 const SECTIONS = ['/quickstart', '/concepts', '/sdk', '/cli', '/self-hosting'];
+const DOCS_ORIGIN = 'https://docs.peretyn.dev';
 
 interface CrawledPage {
   status: number;
@@ -44,5 +45,29 @@ describe('the docs site', () => {
   it('renders an HTTP API reference page from the OpenAPI spec', () => {
     const referencePages = [...pages].filter(([path]) => path.startsWith('/reference/'));
     expect(referencePages.some(([, page]) => page.html.includes('/v1/check'))).toBe(true);
+  });
+});
+
+describe('llms.txt', () => {
+  let response: Response;
+  let body: string;
+
+  beforeAll(async () => {
+    response = await fetch(`${inject('docsUrl')}/llms.txt`);
+    body = await response.text();
+  });
+
+  it('is served as Markdown', () => {
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/markdown');
+  });
+
+  it.each(SECTIONS)('links to the %s section by its public URL', (section) => {
+    expect(body).toContain(`(${DOCS_ORIGIN}${section})`);
+  });
+
+  it('lists the install commands', () => {
+    expect(body).toContain('curl -fsSL https://peretyn.dev/install | sh');
+    expect(body).toContain('curl -fsSL https://peretyn.dev/install-cli | sh');
   });
 });

@@ -16,6 +16,25 @@ interface ScriptRun {
 const SNIPPET_RUNS: Record<string, ScriptRun[]> = {
   quickstart: [{ script: 'check.ts', output: 'allowed' }],
   concepts: [{ script: 'check.ts', output: 'allowed' }],
+  roles: [
+    { script: 'assign.ts', output: 'assigned 9 tuples' },
+    {
+      script: 'check.ts',
+      output: [
+        'ada can_manage project:billing: allowed',
+        'root can_manage project:docs: allowed',
+        'grace can_view project:billing: allowed',
+        'linus can_edit project:billing: denied',
+        'sam can_view project:docs: allowed',
+        'sam can_edit project:docs: denied',
+      ].join('\n'),
+    },
+    {
+      script: 'share.ts',
+      output: 'mary can_view project:billing: allowed\nmary can_view project:docs: denied',
+    },
+    { script: 'lookup.ts', output: 'mary can view: billing' },
+  ],
   sdk: [
     { script: 'client.ts', output: ENVIRONMENT_NAME },
     { script: 'write.ts', output: 'wrote 2 tuples' },

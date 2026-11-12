@@ -60,9 +60,9 @@ can edit the roadmap: user:alice
 
 Checks and lookups accept these options:
 
-| Option             | Effect                                                                                                                                   |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `contextualTuples` | Tuples that count for this call only. Peretyn doesn't store them.                                                                        |
-| `consistency`      | `MINIMIZE_LATENCY` (default) can answer from a cache. `HIGHER_CONSISTENCY` skips the cache, so the call sees writes made just before it. |
+| Option             | Effect                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contextualTuples` | Tuples that count for this call only. Peretyn doesn't store them.                                                                              |
+| `consistency`      | `MINIMIZE_LATENCY` (default) or `HIGHER_CONSISTENCY`. Today both see every write made before the call. See [Consistency](/limits#consistency). |
 
 `expand` returns the tree of relations that grant a permission on an object. Use it to explain why a check was allowed.

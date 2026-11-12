@@ -5,7 +5,7 @@ description: Install the TypeScript SDK and create a client.
 
 `@peretyn/sdk` is the TypeScript client for the Peretyn runtime. It needs Node.js 24 or later.
 
-```sh
+```npm
 npm install @peretyn/sdk
 ```
 
@@ -41,7 +41,7 @@ The API key selects the environment, so you never pass a project or environment 
 
 ## Timeouts and retries
 
-`timeoutMs` is the budget for a whole call, across every attempt and the time it takes to read the response. A check costs the runtime tens of microseconds, so most of the budget goes to the network. Raise it for `lookupResources` over large result sets.
+`timeoutMs` is the budget for a whole call, across every attempt and the time it takes to read the response. It covers the network and the runtime's own work, which reads tuples from PostgreSQL. Raise it for `lookupResources` over large result sets.
 
 The SDK retries network errors, `429` and every `5xx` except `504`, as long as the budget lasts. It retries a write only when the write is idempotent. See [Idempotent writes](/sdk/tuples#idempotent-writes).
 

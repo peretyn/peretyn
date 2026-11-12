@@ -3,7 +3,7 @@
 Typed TypeScript client for the Peretyn runtime.
 
 ```sh
-pnpm add @peretyn/sdk
+npm install @peretyn/sdk
 ```
 
 ```ts
