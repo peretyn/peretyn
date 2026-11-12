@@ -1,5 +1,18 @@
 # @peretyn/docs
 
+## 0.5.0
+
+### Minor Changes
+
+- 30f38da: Add an HTTP API page that reaches a first check with curl, and link it from the introduction.
+- 1b90b28: Serve /llms.txt with what Peretyn is, its install commands and an index of the docs.
+- e182b73: Document self-host operations, and the limits and guarantees of Peretyn today.
+- aa7fc28: Add a roles and permissions (RBAC) guide.
+
+### Patch Changes
+
+- aa45367: Make the quickstart work as written on a fresh self-hosted install.
+
 ## 0.4.0
 
 ### Minor Changes
