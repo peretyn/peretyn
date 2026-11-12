@@ -1,4 +1,4 @@
-{$PERETYN_DOMAIN} {
+{$PERETYN_DASHBOARD_URL} {
 	request_header -X-Forwarded-For
 
 	handle /v1/* {

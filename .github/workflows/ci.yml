@@ -88,6 +88,7 @@ jobs:
       PERETYN_ADMIN_EMAIL: admin@example.com
       PERETYN_ADMIN_NAME: Admin
       PERETYN_RESEND_API_KEY: ''
+      PERETYN_DEPLOY_REF: ${{ github.sha }}
       GITHUB_TOKEN: ${{ github.token }}
 
     steps:
@@ -96,21 +97,33 @@ jobs:
       - name: ShellCheck
         run: shellcheck deploy/install.sh
 
+      - name: An IP address is refused before anything starts
+        run: |
+          ! PERETYN_TAG=unused PERETYN_DOMAIN=1.2.3.4 PERETYN_DIR="$RUNNER_TEMP/ip-install" sh deploy/install.sh </dev/null 2>refused.log
+          grep -q 'not an IP address' refused.log
+          test -z "$(docker ps -aq)"
+
+      - name: A private suffix is warned about before anything starts
+        run: |
+          ! PERETYN_TAG=unused PERETYN_DOMAIN=peretyn.test PERETYN_ADMIN_EMAIL= PERETYN_DIR="$RUNNER_TEMP/private-install" sh deploy/install.sh </dev/null >warned.log 2>&1
+          grep -q "can't get a public TLS certificate" warned.log
+          test -z "$(docker ps -aq)"
+
       - name: Install unattended
         run: sh deploy/install.sh </dev/null | tee install.log
 
       - name: Runtime answers through Caddy
-        run: test "$(curl -sk -o /dev/null -w '%{http_code}' -X POST https://localhost/v1/check)" = 401
+        run: test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost/v1/check)" = 401
 
       - name: Dashboard answers through Caddy
-        run: test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost/)" = 307
+        run: test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost/)" = 307
 
       - name: Admin signs in with the printed password
         run: |
           password=$(sed -n 's/^Password: //p' install.log)
           echo "::add-mask::$password"
-          test "$(curl -sk -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H 'Origin: https://localhost' \
-            -d "{\"email\":\"$PERETYN_ADMIN_EMAIL\",\"password\":\"$password\"}" https://localhost/api/auth/sign-in/email)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H 'Origin: http://localhost' \
+            -d "{\"email\":\"$PERETYN_ADMIN_EMAIL\",\"password\":\"$password\"}" http://localhost/api/auth/sign-in/email)" = 200
 
       - name: Running again upgrades and keeps the secrets
         run: |
