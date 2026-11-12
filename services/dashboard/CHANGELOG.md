@@ -1,5 +1,13 @@
 # @peretyn/dashboard
 
+## 0.2.2
+
+### Patch Changes
+
+- aa45367: Make the quickstart work as written on a fresh self-hosted install.
+- Updated dependencies [aa45367]
+  - @peretyn/sdk@0.1.2
+
 ## 0.2.1
 
 ## 0.2.0

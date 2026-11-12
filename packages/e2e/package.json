@@ -1,6 +1,6 @@
 {
   "name": "@peretyn/e2e",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "End-to-end tests for the Peretyn SDK against a live runtime.",
   "type": "module",
