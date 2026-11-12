@@ -1,0 +1,102 @@
+---
+title: HTTP API
+description: Call Peretyn from any language with plain HTTP requests.
+---
+
+The TypeScript SDK is a client for the runtime's HTTP API. From any other language, send the same JSON requests yourself. This page gets you to a first check with `curl`. The [reference](/reference/check) lists every endpoint.
+
+## Base URL and authentication
+
+The API is served under `/v1` at the runtime URL: `https://app.peretyn.dev`, or your own domain if you [self-host](/self-hosting).
+
+Send the API key of an environment as a bearer token. The key selects the environment and the store that holds its tuples, so no request carries a project, environment or store id.
+
+```sh
+export PERETYN_RUNTIME_URL=https://app.peretyn.dev
+export PERETYN_TOKEN=prn_test_...
+```
+
+The examples use the schema from the [Quickstart](/quickstart): a document has owners and viewers, and both can view it. Publish the schema with `peretyn apply` before you call the API. The API reads the model, it doesn't change it.
+
+## Write tuples
+
+Subjects and objects are strings of the form `type:id`, such as `user:alice` or `document:roadmap`. A subject can also be every holder of a relation, such as `team:design#member`.
+
+<include>../../snippets/http/write.sh</include>
+
+The runtime returns `{}`. Alice owns the roadmap, and Bob can view the specs. To remove tuples, send them under `deletes` instead of `writes`.
+
+## Check
+
+<include>../../snippets/http/check.sh</include>
+
+```json
+{ "allowed": true, "resolution": "" }
+```
+
+Alice owns the roadmap, and owners can view.
+
+Add `"consistency": "HIGHER_CONSISTENCY"` to the body when the check must see a write made just before it.
+
+## List objects
+
+`list-objects` returns the objects of one type on which a subject has a relation:
+
+<include>../../snippets/http/list-objects.sh</include>
+
+```json
+{ "objects": ["document:specs"] }
+```
+
+Unlike the SDK's `lookupResources`, the API returns each object with its type.
+
+## Errors
+
+Every error has a JSON body with a message in `error` and the HTTP status in `code`:
+
+```json
+{ "code": 401, "error": "missing or unknown bearer token" }
+```
+
+| Status | Meaning                                       |
+| ------ | --------------------------------------------- |
+| `400`  | The request is invalid.                       |
+| `401`  | The bearer token is missing or unknown.       |
+| `403`  | The token isn't scoped to a store.            |
+| `409`  | A concurrent write conflicts with this one.   |
+| `413`  | The body is over 4 MiB.                       |
+| `422`  | The request was throttled.                    |
+| `502`  | The authorization engine failed.              |
+| `503`  | The runtime can't look up API keys right now. |
+| `504`  | The request ran past its deadline.            |
+
+A `5xx` error carries only the status text in `error`.
+
+## Endpoints
+
+<Cards>
+  <Card title="Check" href="/reference/check">
+    `POST /v1/check`
+  </Card>
+  <Card title="Batch check" href="/reference/batchCheck">
+    `POST /v1/batch-check`
+  </Card>
+  <Card title="Write" href="/reference/write">
+    `POST /v1/write`
+  </Card>
+  <Card title="List objects" href="/reference/listObjects">
+    `POST /v1/list-objects`
+  </Card>
+  <Card title="List users" href="/reference/listUsers">
+    `POST /v1/list-users`
+  </Card>
+  <Card title="Expand" href="/reference/expand">
+    `POST /v1/expand`
+  </Card>
+  <Card title="Changes" href="/reference/readChanges">
+    `GET /v1/changes`
+  </Card>
+  <Card title="Me" href="/reference/getMe">
+    `GET /v1/me`
+  </Card>
+</Cards>

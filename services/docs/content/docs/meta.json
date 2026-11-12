@@ -8,6 +8,7 @@
     "cli",
     "self-hosting",
     "limits",
+    "http-api",
     "reference"
   ]
 }
