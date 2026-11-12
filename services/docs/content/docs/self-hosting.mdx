@@ -3,7 +3,7 @@ title: Self-hosting
 description: Run the Peretyn stack on your own server with Docker Compose.
 ---
 
-The Compose stack runs Peretyn on one host: the runtime, the control plane, the dashboard, PostgreSQL, and Caddy in front of them. Caddy gets a TLS certificate for your domain, and it is the only service that publishes ports.
+The Compose stack runs Peretyn on one host: the runtime, the control plane, the dashboard, PostgreSQL, and Caddy in front of them. Caddy gets a TLS certificate for your domain, and it is the only service that publishes ports. To see what the stack doesn't do yet, such as running on more than one host, read [Limits and guarantees](/limits).
 
 You need a Linux host with Docker, a domain whose DNS record points at the host, and ports 80 and 443 open.
 
@@ -126,6 +126,51 @@ export PERETYN_RUNTIME_URL=https://peretyn.example.com
 export PERETYN_CONTROL_URL=https://peretyn.example.com
 ```
 
+## Where data lives
+
+Compose names everything after the `peretyn` project:
+
+| Location                | Holds                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `peretyn_postgres-data` | The PostgreSQL database `peretyn`: accounts, organizations, projects, API keys, models, tuples and their change log. |
+| `peretyn_caddy-data`    | Caddy's TLS certificates and their keys.                                                                             |
+| `peretyn_caddy-config`  | Caddy's saved configuration.                                                                                         |
+| `/opt/peretyn`          | `compose.yaml`, the `Caddyfile`, and `.env` with every secret.                                                       |
+
+The database has two schemas. The control plane owns `peretyn_control`: accounts, sessions, organizations, projects, environments and schema versions. The runtime owns `peretyn_runtime`: the hashes of API keys, and the OpenFGA tables that hold models, tuples and the change log.
+
+The containers keep no other state. Caddy gets a new certificate if `peretyn_caddy-data` is lost.
+
+## Back up and restore
+
+### Back up
+
+Run `pg_dump` from the install directory. The `-T` flag keeps Docker from attaching a terminal, which would corrupt the dump:
+
+```sh
+cd /opt/peretyn
+docker compose exec -T postgres pg_dump -U peretyn -Fc peretyn > peretyn.dump
+```
+
+The dump is consistent while the stack runs. Copy it off the host, together with `.env`. The dump holds no secrets, but you need `.env` to run the restored stack with the same secrets.
+
+### Restore
+
+Restore into the same `PERETYN_TAG` that made the backup, then [upgrade](#upgrade). The runtime and the control plane hold connections to the database, so stop them first:
+
+```sh
+cd /opt/peretyn
+docker compose stop runtime control dashboard
+docker compose exec -T postgres dropdb -U peretyn peretyn
+docker compose exec -T postgres createdb -U peretyn peretyn
+docker compose exec -T postgres pg_restore -U peretyn -d peretyn < peretyn.dump
+docker compose up -d
+```
+
+`dropdb` deletes the current data, so make sure that the dump is the one you want.
+
+To restore on a new host, put `compose.yaml`, the `Caddyfile` and your old `.env` in the install directory, as in [Install by hand](#install-by-hand). Run `docker compose up -d postgres`, then the commands above.
+
 ## Upgrade
 
 Run the installer again. It keeps `.env` and its secrets, moves `PERETYN_TAG` and the deploy files to the latest release, then pulls the new images and restarts. Set `PERETYN_TAG` to pick a version.
@@ -136,10 +181,26 @@ By hand: change `PERETYN_TAG` in `.env`, then pull the new images and restart:
 docker compose pull && docker compose up -d
 ```
 
-## Back up
+The runtime and the control plane update their database tables when they start. If an update would delete data, the control plane doesn't start, and its log says `aborted: destructive statements`. [Back up](#back-up) before you upgrade.
 
-All data is in the `postgres-data` volume. Back it up with `pg_dump`:
+Downgrades aren't tested. To go back to an older version, restore the backup that you made before the upgrade, with the older `PERETYN_TAG`.
+
+## Uninstall
+
+To stop Peretyn and keep the data, run this from the install directory:
 
 ```sh
-docker compose exec postgres pg_dump -U peretyn peretyn > peretyn.sql
+docker compose down
 ```
+
+The volumes stay. `docker compose up -d` starts the stack again with the same data.
+
+To delete everything, including every tuple, account and certificate:
+
+```sh
+cd /opt/peretyn
+docker compose down --volumes --rmi all
+cd / && rm -rf /opt/peretyn
+```
+
+This can't be undone. [Back up](#back-up) first if you might need the data.

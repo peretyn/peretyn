@@ -1,0 +1,96 @@
+---
+title: Limits and guarantees
+description: What Peretyn does and doesn't do today, and the numbers behind it.
+---
+
+Peretyn runs the OpenFGA engine inside its runtime, on PostgreSQL. This page lists the limits that the runtime sets, and what it guarantees. "Not yet" means that Peretyn doesn't do it today.
+
+## Consistency
+
+A write applies all of its tuples in one PostgreSQL transaction, or none of them.
+
+The runtime doesn't cache tuples or check results. Every check, lookup and expand reads the tuples from PostgreSQL, so it sees every write that committed before it started.
+
+Checks and lookups take a `consistency` option, `MINIMIZE_LATENCY` or `HIGHER_CONSISTENCY`. Today both read the same data, so they return the same answers. Pass `HIGHER_CONSISTENCY` where a call must see a write made just before it.
+
+Calls that don't pass `authorizationModelId` use the latest model that you published with `peretyn apply`, from the next call on.
+
+## Lookups and pagination
+
+`lookupResources` and `lookupSubjects` don't paginate. Each call returns one list:
+
+| Limit                          | Value     |
+| ------------------------------ | --------- |
+| Results of one lookup          | 1,000     |
+| Time a lookup spends searching | 3 seconds |
+
+When a lookup reaches either limit, it returns the results that it found so far. The response doesn't say that the list was cut short, so treat 1,000 results as possibly incomplete.
+
+`readChanges` does paginate. Each page holds up to 50 changes, oldest first, and you can't change the page size. Pass the `continuationToken` of one page to get the next. When there are no new changes, the page is empty and carries the token that you sent, so you can poll with it.
+
+## Request limits
+
+| Limit                                      | Value                                      |
+| ------------------------------------------ | ------------------------------------------ |
+| Tuples in one `write`, writes plus deletes | 100                                        |
+| Checks in one batch-check request          | 50                                         |
+| Contextual tuples in one call              | 100                                        |
+| Request body                               | 4 MiB                                      |
+| Time the runtime spends on one request     | `PERETYN_REQUEST_TIMEOUT`, `5s` by default |
+| Depth of relations that one check follows  | 25                                         |
+| Object types in one model                  | 100                                        |
+| Size of one model                          | 256 KiB                                    |
+
+The SDK's `write` sends one request, so split larger writes into calls of 100 tuples. `batchCheck` splits for you: it sends batches of 50 checks, at most 4 at a time.
+
+A request that runs past `PERETYN_REQUEST_TIMEOUT` fails with `504`. Self-hosted runtimes can set it to any duration below `30s`. See [Configuration](/self-hosting#configuration).
+
+Each tuple has these limits:
+
+| Part     | Limit                                               |
+| -------- | --------------------------------------------------- |
+| Subject  | 512 bytes                                           |
+| Relation | 1 to 50 characters, without `:`, `#`, `@` or spaces |
+| Object   | 2 to 256 characters, `type:id`, without spaces      |
+
+## Conditions and caveats
+
+Not yet. `defineSchema` can't declare conditions, and the SDK can't attach one to a tuple or pass a context to a check.
+
+Contextual tuples cover some of the same cases. They count for one call only, and Peretyn doesn't store them. See [Options](/sdk/checks#options).
+
+## Scaling and high availability
+
+Not yet. The supported setup is the Compose stack from [Self-hosting](/self-hosting): one host, one PostgreSQL, and one container of each service. If the host goes down, Peretyn is down until it comes back or you [restore a backup](/self-hosting#back-up-and-restore) on another host.
+
+Peretyn hasn't been tested with more than one runtime against the same database. The runtime keeps API keys in memory for up to 30 seconds. With more than one runtime, a key that you rotate or delete could still work on the others for that long.
+
+## Migrating from OpenFGA
+
+Peretyn evaluates OpenFGA models, but it builds them only from `defineSchema`. `peretyn build` doesn't read an OpenFGA DSL or JSON model, so you rewrite the model in TypeScript:
+
+| OpenFGA                               | `defineSchema`                 |
+| ------------------------------------- | ------------------------------ |
+| `define viewer: [user]`               | a relation: `viewer: ['user']` |
+| `[user:*]`, `[team#member]`           | `'user:*'`, `'team#member'`    |
+| `define can_view: a or b`             | a permission: `any('a', 'b')`  |
+| `and`, `but not`                      | `intersect`, `exclude`         |
+| `define can_view: viewer from parent` | `via('parent', 'viewer')`      |
+| conditions                            | Not yet.                       |
+
+In OpenFGA, one relation can be both written and computed, such as `define viewer: [user] or editor`. In Peretyn, a name is either a relation or a permission, so split it into a relation that you write and a permission that you check.
+
+The file that `peretyn build` writes holds the OpenFGA DSL of your schema, so you can compare it with your current model.
+
+Tuples carry over as they are when you keep the same type and relation names. Read them from OpenFGA, then store them with the SDK's `write`, 100 tuples per call. Tuples with a condition can't be moved yet.
+
+## Performance
+
+Peretyn doesn't publish latency figures yet.
+
+The runtime has one benchmark, `BenchmarkCheck`. It runs a check of a direct relation through the OpenFGA engine against PostgreSQL in a container, over 100 tuples. It doesn't include HTTP, the API key lookup or the network, so it isn't the latency that your application sees. To run it from a clone of the repository, with Go and Docker installed:
+
+```sh
+cd services/runtime
+GOWORK=off go test -tags integration -run '^$' -bench BenchmarkCheck ./internal/http/engine/
+```
