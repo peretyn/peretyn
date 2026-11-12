@@ -9,7 +9,7 @@ services:
       - '443:443'
       - '443:443/udp'
     environment:
-      PERETYN_DOMAIN: ${PERETYN_DOMAIN:?set in .env}
+      PERETYN_DASHBOARD_URL: ${PERETYN_DASHBOARD_URL:?set in .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

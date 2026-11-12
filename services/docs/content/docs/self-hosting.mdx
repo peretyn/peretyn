@@ -5,7 +5,9 @@ description: Run the Peretyn stack on your own server with Docker Compose.
 
 The Compose stack runs Peretyn on one host: the runtime, the control plane, the dashboard, PostgreSQL, and Caddy in front of them. Caddy gets a TLS certificate for your domain, and it is the only service that publishes ports. To see what the stack doesn't do yet, such as running on more than one host, read [Limits and guarantees](/limits).
 
-You need a Linux host with Docker, a domain whose DNS record points at the host, and ports 80 and 443 open.
+You need a Linux host with Docker, a domain whose DNS record points at the host, and ports 80 and 443 open. To try Peretyn without a domain, see [Try it on this machine](#try-it-on-this-machine).
+
+The domain must be a public name. The installer refuses an IP address, because no client can verify a TLS certificate for one. It warns about names under suffixes reserved for private networks, such as `.test`, `.local`, `.internal` and `.lan`, because they can't get a public certificate.
 
 ## Install
 
@@ -35,12 +37,29 @@ curl -fsSL https://peretyn.dev/install |
 
 | Variable                 | Description                                                            |
 | ------------------------ | ---------------------------------------------------------------------- |
-| `PERETYN_DOMAIN`         | The domain that Caddy serves. Required.                                |
+| `PERETYN_DOMAIN`         | The domain that Caddy serves, or `localhost`. Required.                |
 | `PERETYN_ADMIN_EMAIL`    | The first admin's email. Required.                                     |
 | `PERETYN_ADMIN_NAME`     | The first admin's name. Set it empty to use the email's local part.    |
 | `PERETYN_RESEND_API_KEY` | A [Resend](https://resend.com) API key. Set it empty to send no email. |
 | `PERETYN_TAG`            | The version to install. Defaults to the latest release.                |
 | `PERETYN_DIR`            | The install directory. Defaults to `/opt/peretyn`.                     |
+
+### Try it on this machine
+
+To evaluate Peretyn on a laptop or a box with no DNS, install it on `localhost`:
+
+```sh
+curl -fsSL https://peretyn.dev/install |
+  PERETYN_DOMAIN=localhost PERETYN_ADMIN_EMAIL=you@example.com PERETYN_ADMIN_NAME= PERETYN_RESEND_API_KEY= sh
+```
+
+With `localhost`, Caddy serves plain HTTP at `http://localhost`, so there is no certificate to trust. Open the dashboard at `http://localhost` from the same machine, and use it as the URL in the [Quickstart](/quickstart):
+
+```sh
+export PERETYN_URL=http://localhost
+```
+
+Keys and passwords travel unencrypted, so use this install only for evaluation, and only from the machine it runs on. To move to a real domain, uninstall it and install again with your domain.
 
 ### Verify before running
 
@@ -107,8 +126,8 @@ Admins manage users through the better-auth admin endpoints under `/api/auth/adm
 | Variable                  | Required | Description                                                                 |
 | ------------------------- | -------- | --------------------------------------------------------------------------- |
 | `PERETYN_TAG`             | Yes      | The server version to run, such as the latest `@peretyn/runtime` release.   |
-| `PERETYN_DOMAIN`          | Yes      | The domain that Caddy serves, such as `peretyn.example.com`.                |
-| `PERETYN_DASHBOARD_URL`   | Yes      | The public URL of the dashboard, such as `https://peretyn.example.com`.     |
+| `PERETYN_DASHBOARD_URL`   | Yes      | The URL that Caddy serves, such as `https://peretyn.example.com`.           |
+| `PERETYN_DOMAIN`          | No       | The domain that the installer was given. The stack doesn't read it.         |
 | `POSTGRES_PASSWORD`       | Yes      | The password of the PostgreSQL user.                                        |
 | `PERETYN_INTERNAL_SECRET` | Yes      | The secret that the control plane uses to call the runtime.                 |
 | `BETTER_AUTH_SECRET`      | Yes      | The secret that signs sessions.                                             |

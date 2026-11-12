@@ -11,6 +11,7 @@ REQUIRED_PORTS="80 443"
 CONTROL_HEALTH_URL="http://127.0.0.1:3001/healthz"
 CONTROL_READY_ATTEMPTS=60
 CONTROL_READY_DELAY_SECONDS=2
+LOCAL_DOMAIN="localhost"
 SECRET_BYTES=32
 ADMIN_PASSWORD_BYTES=12
 
@@ -73,10 +74,53 @@ check_ports_are_free() {
   done
 }
 
+is_ip_address() {
+  case "$1" in
+  *:*) return 0 ;;
+  esac
+  printf '%s' "$1" | grep -Eq '^[0-9]+([.][0-9]+){3}$'
+}
+
+is_local_install() {
+  [ "$PERETYN_DOMAIN" = "$LOCAL_DOMAIN" ]
+}
+
+has_private_suffix() {
+  case "$1" in
+  *.test | *.local | *.internal | *.lan | *.example | *.invalid | *.home.arpa | *.localhost) return 0 ;;
+  esac
+  return 1
+}
+
+refuse_ip_address() {
+  is_ip_address "$PERETYN_DOMAIN" || return 0
+  fail "PERETYN_DOMAIN must be a domain name, not an IP address: no client can verify a TLS certificate for $PERETYN_DOMAIN. To try peretyn on this machine, set PERETYN_DOMAIN=$LOCAL_DOMAIN. To serve it to others, point a domain's DNS record at this host."
+}
+
+warn_when_domain_cannot_get_a_certificate() {
+  has_private_suffix "$PERETYN_DOMAIN" || return 1
+  say "Warning: $PERETYN_DOMAIN can't get a public TLS certificate, because its suffix is reserved for private networks. Caddy keeps retrying, and browsers, the CLI and the SDK fail with TLS errors. To try peretyn on this machine, use PERETYN_DOMAIN=$LOCAL_DOMAIN instead."
+}
+
 warn_when_domain_does_not_resolve() {
   has_command getent || return 0
   getent hosts "$PERETYN_DOMAIN" >/dev/null && return 0
   say "Warning: $PERETYN_DOMAIN does not resolve yet. Caddy keeps retrying the certificate once DNS points at this host."
+}
+
+check_domain() {
+  refuse_ip_address
+  is_local_install && return
+  warn_when_domain_cannot_get_a_certificate && return
+  warn_when_domain_does_not_resolve
+}
+
+public_url() {
+  if is_local_install; then
+    printf 'http://%s' "$PERETYN_DOMAIN"
+    return
+  fi
+  printf 'https://%s' "$PERETYN_DOMAIN"
 }
 
 fetch_releases() {
@@ -102,6 +146,10 @@ resolve_version() {
 }
 
 deploy_files_url() {
+  if [ -n "${PERETYN_DEPLOY_REF:-}" ]; then
+    printf '%s/%s/deploy' "$RAW_ORIGIN" "$PERETYN_DEPLOY_REF"
+    return
+  fi
   printf '%s/%%40peretyn%%2Fruntime%%40%s/deploy' "$RAW_ORIGIN" "$PERETYN_TAG"
 }
 
@@ -127,7 +175,7 @@ write_env_file() {
   cat >.env <<EOF
 PERETYN_TAG=$PERETYN_TAG
 PERETYN_DOMAIN=$PERETYN_DOMAIN
-PERETYN_DASHBOARD_URL=https://$PERETYN_DOMAIN
+PERETYN_DASHBOARD_URL=$(public_url)
 POSTGRES_PASSWORD=$(generate_secret "$SECRET_BYTES")
 PERETYN_INTERNAL_SECRET=$(generate_secret "$SECRET_BYTES")
 BETTER_AUTH_SECRET=$(generate_secret "$SECRET_BYTES")
@@ -167,23 +215,29 @@ enroll_admin() {
 collect_install_answers() {
   ask PERETYN_DOMAIN "Domain for peretyn (e.g. peretyn.example.com):"
   require_value PERETYN_DOMAIN
+  check_domain
   ask PERETYN_ADMIN_EMAIL "Admin email:"
   require_value PERETYN_ADMIN_EMAIL
   ask PERETYN_ADMIN_NAME "Admin name (optional):"
   ask PERETYN_RESEND_API_KEY "Resend API key for email (optional, leave empty to send no email):"
 }
 
+say_when_local_install() {
+  is_local_install || return 0
+  say "This is a local evaluation install. It serves plain HTTP, so use it only from this machine."
+}
+
 install() {
   check_ports_are_free
   collect_install_answers
-  warn_when_domain_does_not_resolve
   download_deploy_files
   write_env_file
   start_stack
   ADMIN_PASSWORD=$(generate_secret "$ADMIN_PASSWORD_BYTES")
   enroll_admin
   say ""
-  say "peretyn $PERETYN_TAG is running at https://$PERETYN_DOMAIN"
+  say "peretyn $PERETYN_TAG is running at $(public_url)"
+  say_when_local_install
   say "Admin: $PERETYN_ADMIN_EMAIL"
   say "Password: $ADMIN_PASSWORD"
   say "This password is shown once. Change it after you sign in."
