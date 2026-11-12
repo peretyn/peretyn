@@ -1,5 +1,5 @@
 import { peretyn, PeretynError } from '@peretyn/sdk';
-import type { schema } from './schema';
+import type { schema } from './schema.ts';
 
 const FORBIDDEN = 403;
 
