@@ -1,5 +1,11 @@
 # @peretyn/go-cli
 
+## 0.1.3
+
+### Patch Changes
+
+- ba90ab0: The CLI release ships its binaries again, so the installer works.
+
 ## 0.1.2
 
 ### Patch Changes

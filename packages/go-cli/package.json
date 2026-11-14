@@ -1,6 +1,6 @@
 {
   "name": "@peretyn/go-cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Peretyn CLI — compile a schema module and plan/apply it against a control plane environment.",
   "scripts": {
