@@ -28,11 +28,15 @@ To install somewhere else, or as a user in the `docker` group, set `PERETYN_DIR`
 
 ### Unattended install
 
-Every question has a variable. Set them and the installer asks nothing:
+Every question has a variable. Set them all, even to an empty value, and the installer asks nothing. Use this form over `ssh` or in CI, where there is no terminal to answer questions:
 
 ```sh
-curl -fsSL https://peretyn.dev/install |
-  PERETYN_DOMAIN=peretyn.example.com PERETYN_ADMIN_EMAIL=you@example.com PERETYN_ADMIN_NAME='Your Name' PERETYN_RESEND_API_KEY= sh
+curl -fsSL https://peretyn.dev/install | \
+  PERETYN_DOMAIN=peretyn.example.com \
+  PERETYN_ADMIN_EMAIL=you@example.com \
+  PERETYN_ADMIN_NAME='Your Name' \
+  PERETYN_RESEND_API_KEY= \
+  sh
 ```
 
 | Variable                 | Description                                                            |
@@ -49,8 +53,12 @@ curl -fsSL https://peretyn.dev/install |
 To evaluate Peretyn on a laptop or a box with no DNS, install it on `localhost`:
 
 ```sh
-curl -fsSL https://peretyn.dev/install |
-  PERETYN_DOMAIN=localhost PERETYN_ADMIN_EMAIL=you@example.com PERETYN_ADMIN_NAME= PERETYN_RESEND_API_KEY= sh
+curl -fsSL https://peretyn.dev/install | \
+  PERETYN_DOMAIN=localhost \
+  PERETYN_ADMIN_EMAIL=you@example.com \
+  PERETYN_ADMIN_NAME= \
+  PERETYN_RESEND_API_KEY= \
+  sh
 ```
 
 With `localhost`, Caddy serves plain HTTP at `http://localhost`, so there is no certificate to trust. Open the dashboard at `http://localhost` from the same machine, and use it as the URL in the [Quickstart](/quickstart):

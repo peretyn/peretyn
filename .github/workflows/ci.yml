@@ -109,8 +109,21 @@ jobs:
           grep -q "can't get a public TLS certificate" warned.log
           test -z "$(docker ps -aq)"
 
+      - name: Without a terminal, missing answers print a working example
+        run: |
+          ! env -u PERETYN_DOMAIN PERETYN_TAG=unused PERETYN_DIR="$RUNNER_TEMP/no-answers" sh deploy/install.sh </dev/null 2>no-answers.log
+          grep -q 'curl -fsSL https://peretyn.dev/install | PERETYN_DOMAIN=peretyn.example.com PERETYN_ADMIN_EMAIL=admin@example.com' no-answers.log
+
       - name: Install unattended
-        run: sh deploy/install.sh </dev/null | tee install.log
+        run: |
+          set -o pipefail
+          sh deploy/install.sh </dev/null 2>&1 | tee install.log
+
+      - name: The install ends with credentials and next steps, without log lines
+        run: |
+          ! grep -q '^{' install.log
+          tail -n 4 install.log | grep -q '^Next steps:'
+          grep -q '^Password: ' install.log
 
       - name: Runtime answers through Caddy
         run: test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost/v1/check)" = 401

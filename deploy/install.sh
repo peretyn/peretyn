@@ -12,6 +12,9 @@ CONTROL_HEALTH_URL="http://127.0.0.1:3001/healthz"
 CONTROL_READY_ATTEMPTS=60
 CONTROL_READY_DELAY_SECONDS=2
 LOCAL_DOMAIN="localhost"
+INSTALL_URL="https://peretyn.dev/install"
+CLI_INSTALL_URL="https://peretyn.dev/install-cli"
+QUICKSTART_URL="https://docs.peretyn.dev/quickstart"
 SECRET_BYTES=32
 ADMIN_PASSWORD_BYTES=12
 
@@ -36,6 +39,39 @@ has_terminal() {
   [ -r /dev/tty ] && (: </dev/tty) 2>/dev/null
 }
 
+value_or() {
+  eval "current=\${$1-}"
+  eval "is_set=\${$1+set}"
+  if [ -n "$is_set" ]; then
+    printf '%s' "$current"
+    return
+  fi
+  printf '%s' "$2"
+}
+
+shell_quote() {
+  case "$1" in
+    *[!A-Za-z0-9._@:/+-]*) printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+unattended_example() {
+  printf 'curl -fsSL %s | PERETYN_DOMAIN=%s PERETYN_ADMIN_EMAIL=%s PERETYN_ADMIN_NAME=%s PERETYN_RESEND_API_KEY= sh' \
+    "$INSTALL_URL" \
+    "$(shell_quote "$(value_or PERETYN_DOMAIN peretyn.example.com)")" \
+    "$(shell_quote "$(value_or PERETYN_ADMIN_EMAIL you@example.com)")" \
+    "$(shell_quote "$(value_or PERETYN_ADMIN_NAME '')")"
+}
+
+fail_without_terminal() {
+  fail "$1 is not set and there is no terminal to ask for it. Set every answer as a variable and run again, for example:
+
+  $(unattended_example)
+
+To try peretyn on this machine without a domain, use PERETYN_DOMAIN=$LOCAL_DOMAIN."
+}
+
 ask() {
   name="$1"
   question="$2"
@@ -43,7 +79,7 @@ ask() {
   if [ -n "$is_set" ]; then
     return
   fi
-  has_terminal || fail "$name is not set and there is no terminal to ask for it. Set $name and run again."
+  has_terminal || fail_without_terminal "$name"
   printf '%s ' "$question" >/dev/tty
   read -r "${name?}" </dev/tty
 }
@@ -207,9 +243,11 @@ wait_for_control() {
 
 enroll_admin() {
   wait_for_control
-  docker compose exec -T control node services/control/dist/scripts/enroll.js \
-    "$PERETYN_ADMIN_EMAIL" "$ADMIN_PASSWORD" "${PERETYN_ADMIN_NAME:-}" --admin >/dev/null ||
-    fail "could not create the admin account. Create it from $PERETYN_DIR with: docker compose exec control node services/control/dist/scripts/enroll.js <email> <password> <name> --admin"
+  enroll_output=$(docker compose exec -T control node services/control/dist/scripts/enroll.js \
+    "$PERETYN_ADMIN_EMAIL" "$ADMIN_PASSWORD" "${PERETYN_ADMIN_NAME:-}" --admin 2>&1) ||
+    fail "could not create the admin account:
+$enroll_output
+Create it from $PERETYN_DIR with: docker compose exec control node services/control/dist/scripts/enroll.js <email> <password> <name> --admin"
 }
 
 collect_install_answers() {
@@ -227,6 +265,27 @@ say_when_local_install() {
   say "This is a local evaluation install. It serves plain HTTP, so use it only from this machine."
 }
 
+say_when_email_is_off() {
+  [ -z "${PERETYN_RESEND_API_KEY:-}" ] || return 0
+  say "Email is off, so there are no password resets or invitations. To turn it on, set PERETYN_RESEND_API_KEY in $PERETYN_DIR/.env and run 'docker compose up -d'."
+}
+
+say_credentials() {
+  say ""
+  say "Sign in at $(public_url) with:"
+  say "Admin: $PERETYN_ADMIN_EMAIL"
+  say "Password: $ADMIN_PASSWORD"
+  say "This password is shown once. Change it after you sign in."
+}
+
+say_next_steps() {
+  say ""
+  say "Next steps:"
+  say "  1. Sign in and create an organization and a project. Copy the development key."
+  say "  2. Install the CLI: curl -fsSL $CLI_INSTALL_URL | sh"
+  say "  3. Follow the quickstart with PERETYN_URL=$(public_url): $QUICKSTART_URL"
+}
+
 install() {
   check_ports_are_free
   collect_install_answers
@@ -238,9 +297,9 @@ install() {
   say ""
   say "peretyn $PERETYN_TAG is running at $(public_url)"
   say_when_local_install
-  say "Admin: $PERETYN_ADMIN_EMAIL"
-  say "Password: $ADMIN_PASSWORD"
-  say "This password is shown once. Change it after you sign in."
+  say_when_email_is_off
+  say_credentials
+  say_next_steps
 }
 
 upgrade() {
