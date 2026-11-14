@@ -1,5 +1,12 @@
 # @peretyn/docs
 
+## 0.6.1
+
+### Patch Changes
+
+- 9b60729: The CLI installer prints the PATH line to add and the next command to run, and the CLI says model where it said artifact.
+- b2379c4: The installer ends with the credentials and next steps instead of a log line, and without a terminal it prints a ready-to-paste unattended command.
+
 ## 0.6.0
 
 ### Minor Changes

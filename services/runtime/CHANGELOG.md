@@ -1,5 +1,11 @@
 # @peretyn/runtime
 
+## 0.3.1
+
+### Patch Changes
+
+- b2379c4: The installer ends with the credentials and next steps instead of a log line, and without a terminal it prints a ready-to-paste unattended command.
+
 ## 0.3.0
 
 ### Minor Changes
