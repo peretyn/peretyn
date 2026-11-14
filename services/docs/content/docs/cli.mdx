@@ -11,7 +11,7 @@ The `peretyn` CLI compiles your schema into a model, publishes the model to an e
 curl -fsSL https://peretyn.dev/install-cli | sh
 ```
 
-The installer downloads the latest `@peretyn/go-cli` release for your platform (Linux x86-64 or ARM64, macOS on Apple silicon), checks it against the release's `SHA256SUMS`, and installs it to `~/.local/bin/peretyn`. Run it again to upgrade. `peretyn build` also needs Node.js 24 or later, because it runs your schema module.
+The installer downloads the latest `@peretyn/go-cli` release for your platform (Linux x86-64 or ARM64, macOS on Apple silicon), checks it against the release's `SHA256SUMS`, and installs it to `~/.local/bin/peretyn`. If `~/.local/bin` isn't on your `PATH`, it prints the line to add to your shell profile. Run it again to upgrade. `peretyn build` also needs Node.js 24 or later, because it runs your schema module.
 
 | Variable              | Description                                        |
 | --------------------- | -------------------------------------------------- |

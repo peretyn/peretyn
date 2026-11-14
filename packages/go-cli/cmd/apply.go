@@ -12,7 +12,7 @@ func newApplyCmd() *cobra.Command {
 	var label string
 	cmd := &cobra.Command{
 		Use:   "apply",
-		Short: "Deploy the compiled artifact under a version label",
+		Short: "Deploy the compiled model under a version label",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runApply(&s, label)
 		},

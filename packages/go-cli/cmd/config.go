@@ -48,7 +48,7 @@ func (s *settings) bindToken(cmd *cobra.Command) {
 }
 
 func (s *settings) bindModel(cmd *cobra.Command, name, short string) {
-	cmd.Flags().StringVarP(&s.model, name, short, "", `compiled artifact path (default peretyn.json "model", else peretyn.model.json)`)
+	cmd.Flags().StringVarP(&s.model, name, short, "", `compiled model path (default peretyn.json "model", else peretyn.model.json)`)
 }
 
 func (s *settings) bindControl(cmd *cobra.Command) {

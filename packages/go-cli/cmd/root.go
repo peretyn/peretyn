@@ -9,12 +9,12 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "peretyn",
-	Short: "Deploy and test a compiled schema artifact",
-	Long: `peretyn — deploy and test a compiled schema artifact
+	Short: "Compile a schema to a model, deploy it and test it",
+	Long: `peretyn — compile a schema to a model, deploy it and test it
 
 Auth: the env API key (--token or $PERETYN_TOKEN) — the same key the SDK uses —
 identifies the environment, so plan/apply need no project/env ids. URLs and the
-artifact path come from ./peretyn.json (or $PERETYN_CONFIG); flags and env vars
+model path come from ./peretyn.json (or $PERETYN_CONFIG); flags and env vars
 (PERETYN_CONTROL_URL, PERETYN_RUNTIME_URL, PERETYN_TOKEN) override the file.`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
