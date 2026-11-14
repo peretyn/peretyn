@@ -16,7 +16,7 @@ catalog:
   zod: '4.4.3'
   hono: '4.13.16'
   http-status-codes: '2.3.0'
-  '@hono/node-server': '2.0.4'
+  '@hono/node-server': '2.1.6'
   '@hono/zod-validator': '0.8.0'
   drizzle-orm: '0.45.2'
   drizzle-kit: '0.31.10'

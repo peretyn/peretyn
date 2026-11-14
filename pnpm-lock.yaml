@@ -13,8 +13,8 @@ catalogs:
       specifier: 1.6.16
       version: 1.6.16
     '@hono/node-server':
-      specifier: 2.0.4
-      version: 2.0.4
+      specifier: 2.1.6
+      version: 2.1.6
     '@hono/zod-validator':
       specifier: 0.8.0
       version: 0.8.0
@@ -293,7 +293,7 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: 'catalog:'
-        version: 2.0.4(hono@4.13.16)
+        version: 2.1.6(hono@4.13.16)
       '@hono/zod-validator':
         specifier: 'catalog:'
         version: 0.8.0(hono@4.13.16)(zod@4.4.3)
@@ -1638,11 +1638,11 @@ packages:
     peerDependencies:
       hono: ^4
 
-  '@hono/node-server@2.0.4':
-    resolution: {integrity: sha512-Ut3y0dMMPWy6bZ2kVfx25EOVbZlm15dhF4mOsezMlhpNHy+4MkU1qN9Y6lnruYi4wPmFzimGX2X7LF/FwHli4A==}
+  '@hono/node-server@2.1.6':
+    resolution: {integrity: sha512-p/KH9MnfNcsm3sR6x4lNgm5j+QN4Et8srKredl9DZfXiyZ1UQ3aQ2YVpFLbqktYN5JI+DB+VZFKM2PqE5hLKjQ==}
     engines: {node: '>=20'}
     peerDependencies:
-      hono: ^4
+      hono: ^4 || ^5.0.0-0
 
   '@hono/zod-validator@0.8.0':
     resolution: {integrity: sha512-5uS4S1/LKtZQYvD4BtpPUFkOv8d1wNxHHrChm26buMiEYc1FrHWvDUaKVBwkiVtvSExHSpLGDvcnpI2Copyj9w==}
@@ -8888,7 +8888,7 @@ snapshots:
     dependencies:
       hono: 4.12.23
 
-  '@hono/node-server@2.0.4(hono@4.13.16)':
+  '@hono/node-server@2.1.6(hono@4.13.16)':
     dependencies:
       hono: 4.13.16
 
