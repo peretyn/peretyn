@@ -1,5 +1,11 @@
 # @peretyn/go-cli
 
+## 0.1.2
+
+### Patch Changes
+
+- 9b60729: The CLI installer prints the PATH line to add and the next command to run, and the CLI says model where it said artifact.
+
 ## 0.1.1
 
 ### Patch Changes
