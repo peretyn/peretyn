@@ -14,7 +14,7 @@ onlyBuiltDependencies:
 catalog:
   typescript: '5.9.3'
   zod: '4.4.3'
-  hono: '4.12.23'
+  hono: '4.13.16'
   http-status-codes: '2.3.0'
   '@hono/node-server': '2.0.4'
   '@hono/zod-validator': '0.8.0'

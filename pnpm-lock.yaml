@@ -55,8 +55,8 @@ catalogs:
       specifier: 9.5.3
       version: 9.5.3
     hono:
-      specifier: 4.12.23
-      version: 4.12.23
+      specifier: 4.13.16
+      version: 4.13.16
     http-status-codes:
       specifier: 2.3.0
       version: 2.3.0
@@ -293,10 +293,10 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: 'catalog:'
-        version: 2.0.4(hono@4.12.23)
+        version: 2.0.4(hono@4.13.16)
       '@hono/zod-validator':
         specifier: 'catalog:'
-        version: 0.8.0(hono@4.12.23)(zod@4.4.3)
+        version: 0.8.0(hono@4.13.16)(zod@4.4.3)
       '@peretyn/org-roles':
         specifier: workspace:*
         version: link:../../packages/org-roles
@@ -317,7 +317,7 @@ importers:
         version: 0.45.2(@types/pg@8.20.0)(kysely@0.28.17)(pg@8.21.0)
       hono:
         specifier: 'catalog:'
-        version: 4.12.23
+        version: 4.13.16
       http-status-codes:
         specifier: 'catalog:'
         version: 2.3.0
@@ -5571,6 +5571,10 @@ packages:
     resolution: {integrity: sha512-eIaZ9qDgu7XV0pxOCrg7/WhnQ6Ivm22UcxhXx/A3dcbqbbYgBEkc6e/J/s7j2tS96zoB0S9VBdLwQNCWwUo4LA==}
     engines: {node: '>=16.9.0'}
 
+  hono@4.13.16:
+    resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
+    engines: {node: '>=16.9.0'}
+
   html-void-elements@3.0.0:
     resolution: {integrity: sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg==}
 
@@ -8884,13 +8888,13 @@ snapshots:
     dependencies:
       hono: 4.12.23
 
-  '@hono/node-server@2.0.4(hono@4.12.23)':
+  '@hono/node-server@2.0.4(hono@4.13.16)':
     dependencies:
-      hono: 4.12.23
+      hono: 4.13.16
 
-  '@hono/zod-validator@0.8.0(hono@4.12.23)(zod@4.4.3)':
+  '@hono/zod-validator@0.8.0(hono@4.13.16)(zod@4.4.3)':
     dependencies:
-      hono: 4.12.23
+      hono: 4.13.16
       zod: 4.4.3
 
   '@humanfs/core@0.19.2':
@@ -12856,6 +12860,8 @@ snapshots:
       hermes-estree: 0.25.1
 
   hono@4.12.23: {}
+
+  hono@4.13.16: {}
 
   html-void-elements@3.0.0: {}
 
