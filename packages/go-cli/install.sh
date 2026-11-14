@@ -9,6 +9,7 @@ BINARY_NAME="peretyn"
 CHECKSUMS_FILE="SHA256SUMS"
 SUPPORTED_PLATFORMS="linux-amd64 linux-arm64 darwin-arm64"
 MINIMUM_NODE_MAJOR=24
+QUICKSTART_URL="https://docs.peretyn.dev/quickstart"
 
 say() {
   printf '%s\n' "$*"
@@ -108,12 +109,37 @@ install_binary() {
   mv "$asset" "$PERETYN_BIN_DIR/$BINARY_NAME"
 }
 
-warn_when_not_on_path() {
+is_on_path() {
   case ":$PATH:" in
-    *":$PERETYN_BIN_DIR:"*) return ;;
+    *":$PERETYN_BIN_DIR:"*) return 0 ;;
   esac
-  say "Add $PERETYN_BIN_DIR to your PATH to run peretyn from anywhere:"
-  say "  export PATH=\"$PERETYN_BIN_DIR:\$PATH\""
+  return 1
+}
+
+shell_profile() {
+  case "${SHELL##*/}" in
+    zsh) echo "$HOME/.zshrc" ;;
+    bash) echo "$HOME/.bashrc" ;;
+    *) echo "$HOME/.profile" ;;
+  esac
+}
+
+say_how_to_add_to_path() {
+  is_on_path && return
+  if [ "${SHELL##*/}" = fish ]; then
+    say "$PERETYN_BIN_DIR is not on your PATH. Add it with:"
+    say "  fish_add_path $PERETYN_BIN_DIR"
+    return
+  fi
+  path_line="export PATH=\"$PERETYN_BIN_DIR:\$PATH\""
+  say "$PERETYN_BIN_DIR is not on your PATH. Add it for this shell and for new ones:"
+  say "  $path_line"
+  say "  echo '$path_line' >> $(shell_profile)"
+}
+
+say_next_step() {
+  say ""
+  say "Next: compile your schema with 'peretyn build --schema schema.ts'. See $QUICKSTART_URL"
 }
 
 node_major_version() {
@@ -141,8 +167,9 @@ main() {
   verify_checksum "$asset"
   install_binary "$asset"
   say "Installed $("$PERETYN_BIN_DIR/$BINARY_NAME" --version) to $PERETYN_BIN_DIR/$BINARY_NAME"
-  warn_when_not_on_path
+  say_how_to_add_to_path
   warn_when_node_is_missing_or_old
+  say_next_step
 }
 
 main "$@"

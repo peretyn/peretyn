@@ -17,14 +17,14 @@ type artifact struct {
 func loadArtifact(path string) (*artifact, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read artifact %s: %w (run peretyn build first)", path, err)
+		return nil, fmt.Errorf("read model %s: %w (run peretyn build first)", path, err)
 	}
 	var a artifact
 	if err := json.Unmarshal(raw, &a); err != nil {
-		return nil, fmt.Errorf("parse artifact %s: %w", path, err)
+		return nil, fmt.Errorf("parse model %s: %w", path, err)
 	}
 	if len(a.Model) == 0 || a.DSL == "" {
-		return nil, fmt.Errorf("artifact %s %w", path, errArtifactIncomplete)
+		return nil, fmt.Errorf("model %s %w", path, errArtifactIncomplete)
 	}
 	return &a, nil
 }
@@ -42,7 +42,7 @@ type modelDiff struct {
 
 func printDiff(d modelDiff) {
 	if !d.HasChanges {
-		fmt.Println("no changes — deployed schema matches the artifact")
+		fmt.Println("no changes — the deployed model matches the compiled one")
 		return
 	}
 	fmt.Println("plan: changes to apply")

@@ -36,7 +36,7 @@ func newBuildCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "build",
-		Short: "Compile a TypeScript schema module to an artifact",
+		Short: "Compile a TypeScript schema module to a model",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if schema == "" {
 				return errSchemaRequired
@@ -183,7 +183,7 @@ func writeArtifact(outPath string, content artifactContent) (string, error) {
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(a); err != nil {
-		return "", fmt.Errorf("encode artifact: %w", err)
+		return "", fmt.Errorf("encode model: %w", err)
 	}
 	if err := os.WriteFile(outPath, buf.Bytes(), publicFileMode); err != nil {
 		return "", fmt.Errorf("write %s: %w", outPath, err)
