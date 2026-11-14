@@ -50,7 +50,7 @@ const SNIPPET_RUNS: Record<string, ScriptRun[]> = {
   ],
   http: [
     { script: 'write.sh', output: '{}' },
-    { script: 'check.sh', output: '{"allowed":true, "resolution":""}' },
+    { script: 'check.sh', output: '{"allowed":true,"resolution":""}' },
     { script: 'list-objects.sh', output: '{"objects":["document:specs"]}' },
   ],
 };
@@ -70,15 +70,24 @@ async function provisionSnippetEnvironment(snippet: string): Promise<string> {
   });
 }
 
+function isShellScript(script: string): boolean {
+  return extname(script) === SHELL_SCRIPT_EXTENSION;
+}
+
 function interpreterFor(script: string): string {
-  return extname(script) === SHELL_SCRIPT_EXTENSION ? 'sh' : 'node';
+  return isShellScript(script) ? 'sh' : 'node';
+}
+
+function normalizeOutput(script: string, stdout: string): string {
+  const output = stdout.trim();
+  return isShellScript(script) ? JSON.stringify(JSON.parse(output)) : output;
 }
 
 async function runScript(snippet: string, { script, token }: { script: string; token: string }) {
   const { stdout } = await execa(interpreterFor(script), [join(SNIPPETS_DIR, snippet, script)], {
     env: { PERETYN_TOKEN: token, PERETYN_RUNTIME_URL: inject('runtimeUrl') },
   });
-  return stdout.trim();
+  return normalizeOutput(script, stdout);
 }
 
 describe.each(Object.entries(SNIPPET_RUNS))('the %s docs snippets', (snippet, runs) => {
