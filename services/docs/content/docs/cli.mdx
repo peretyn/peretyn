@@ -28,7 +28,7 @@ gh attestation verify ~/.local/bin/peretyn -R peretyn/peretyn
 
 ### Install by hand
 
-Download the binary for your platform from the latest `@peretyn/go-cli` release on [GitHub](https://github.com/peretyn/peretyn/releases), with its `SHA256SUMS`:
+Download the binary for your platform from the latest [`@peretyn/go-cli` release](https://github.com/peretyn/peretyn/releases?q=%40peretyn%2Fgo-cli), with its `SHA256SUMS`:
 
 | Platform             | File                   |
 | -------------------- | ---------------------- |
@@ -53,8 +53,8 @@ Commit `peretyn.json` with your schema, and keep the API key in the environment:
 
 ```json title="peretyn.json"
 {
-  "control": "https://app.peretyn.dev",
-  "runtime": "https://app.peretyn.dev",
+  "control": "https://peretyn.example.com",
+  "runtime": "https://peretyn.example.com",
   "model": "peretyn.model.json"
 }
 ```
