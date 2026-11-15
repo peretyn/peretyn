@@ -13,9 +13,11 @@ import { Callout } from '@/components/callout';
 import { KeyReveal } from './key-reveal';
 
 export function RotatedKeyDialog({
+  environmentLabel,
   rotatedKey,
   onClose,
 }: {
+  environmentLabel: string;
   rotatedKey: string | null;
   onClose: () => void;
 }) {
@@ -23,14 +25,16 @@ export function RotatedKeyDialog({
     <Dialog open={rotatedKey !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Key rotated</DialogTitle>
-          <DialogDescription>The previous key is now invalid.</DialogDescription>
+          <DialogTitle>{environmentLabel} key rotated</DialogTitle>
+          <DialogDescription>
+            The previous {environmentLabel} key no longer works.
+          </DialogDescription>
         </DialogHeader>
         <Callout>
           <p className="font-medium">Copy it now.</p>
           <p>It won&apos;t be shown again.</p>
         </Callout>
-        {rotatedKey && <KeyReveal label="New API key" value={rotatedKey} />}
+        {rotatedKey && <KeyReveal label={`New ${environmentLabel} key`} value={rotatedKey} />}
         <DialogFooter>
           <Button onClick={onClose}>Done</Button>
         </DialogFooter>

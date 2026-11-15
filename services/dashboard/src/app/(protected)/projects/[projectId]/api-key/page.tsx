@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@peretyn/ui/components/card';
+import { Badge } from '@peretyn/ui/components/badge';
 import { Input } from '@peretyn/ui/components/input';
 import { Skeleton } from '@peretyn/ui/components/skeleton';
 import { QueryError } from '@/components/query-error';
@@ -42,9 +43,8 @@ function KeyValue({
   return <Skeleton className="h-9 w-full" />;
 }
 
-function ApiKey({ projectId, environment }: { projectId: string; environment: Environment }) {
-  const { data: key, error } = useEnvironmentKey(projectId, environment.id);
-  const { mutate: rotate, isPending: isRotating } = useRotateKey(projectId, environment.id);
+function useKeyRotation(projectId: string, environmentId: string) {
+  const { mutate: rotate, isPending: isRotating } = useRotateKey(projectId, environmentId);
   const [rotatedKey, setRotatedKey] = useState<string | null>(null);
 
   const onRotate = () =>
@@ -54,13 +54,38 @@ function ApiKey({ projectId, environment }: { projectId: string; environment: En
         toast.error(error instanceof ControlError ? error.message : 'Failed to rotate key'),
     });
 
+  return { isRotating, onRotate, rotatedKey, clearRotatedKey: () => setRotatedKey(null) };
+}
+
+function ApiKeyTitle({ environment }: { environment: Environment }) {
+  return (
+    <CardTitle className="flex items-center gap-2">
+      API key
+      <Badge variant={environment.isProduction ? 'default' : 'secondary'}>
+        {environmentLabelOf(environment)}
+      </Badge>
+    </CardTitle>
+  );
+}
+
+function environmentLabelOf(environment: Environment): string {
+  return environment.isProduction ? 'Production' : 'Development';
+}
+
+function ApiKey({ projectId, environment }: { projectId: string; environment: Environment }) {
+  const { data: key, error } = useEnvironmentKey(projectId, environment.id);
+  const { isRotating, onRotate, rotatedKey, clearRotatedKey } = useKeyRotation(
+    projectId,
+    environment.id,
+  );
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>API key</CardTitle>
+        <ApiKeyTitle environment={environment} />
         <CardDescription>
-          One opaque key per environment, no expiry. Rotating replaces it immediately; the new key
-          is shown once.
+          Each environment has its own key, with no expiry. Switch environments at the top right.
+          Rotating replaces the key immediately, and the new key is shown once.
         </CardDescription>
         <CardAction>
           <RotateKeyButton
@@ -73,12 +98,16 @@ function ApiKey({ projectId, environment }: { projectId: string; environment: En
       <CardContent className="flex flex-col gap-4">
         <KeyValue error={error} keyValue={key} />
         <p className="text-sm text-muted-foreground">
-          The full key is shown only when the project is created or the key is rotated. Store it
-          somewhere safe.
+          The full key is shown only when the project is created or the key is rotated. If you lost
+          it, rotate the key to get a new one.
         </p>
       </CardContent>
 
-      <RotatedKeyDialog rotatedKey={rotatedKey} onClose={() => setRotatedKey(null)} />
+      <RotatedKeyDialog
+        environmentLabel={environmentLabelOf(environment)}
+        rotatedKey={rotatedKey}
+        onClose={clearRotatedKey}
+      />
     </Card>
   );
 }

@@ -150,8 +150,11 @@ function CreatedView({
       </DialogHeader>
 
       <Callout>
-        <p className="font-medium">Copy these keys now.</p>
-        <p>They are shown once and can&apos;t be retrieved later.</p>
+        <p className="font-medium">Copy these keys now. They won&apos;t be shown again.</p>
+        <p>
+          Each environment has its own key. If you lose one, rotate it on the project&apos;s API key
+          page to get a new one.
+        </p>
       </Callout>
 
       <div className="flex flex-col gap-4">
