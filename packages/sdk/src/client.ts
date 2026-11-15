@@ -1,3 +1,4 @@
+import { assertBatchCheckArgument, assertCheckArgument, assertWriteArgument } from './arguments.js';
 import type { PeretynSchema, TypeNames, CheckRelationsOf, DirectRelationsOf } from './schema.js';
 
 /**
@@ -627,6 +628,7 @@ function toCheckTupleKey(check: RawCheck) {
 }
 
 async function checkTuple(transport: Transport, req: RawCheck): Promise<CheckResponse> {
+  assertCheckArgument('check', req);
   const body = {
     tuple_key: toCheckTupleKey(req),
     contextual_tuples: contextualTuples(req.contextualTuples),
@@ -634,10 +636,12 @@ async function checkTuple(transport: Transport, req: RawCheck): Promise<CheckRes
     authorization_model_id: req.authorizationModelId,
   };
   const raw = await transport.post<{ allowed?: boolean; resolution?: string }>('/check', body);
-  return { allowed: Boolean(raw.allowed), resolution: raw.resolution };
+  const allowed = Boolean(raw.allowed);
+  return raw.resolution ? { allowed, resolution: raw.resolution } : { allowed };
 }
 
 async function assertAllowed(transport: Transport, req: RawCheck): Promise<void> {
+  assertCheckArgument('assert', req);
   const { allowed } = await checkTuple(transport, req);
   if (allowed) return;
   throw new PeretynError(
@@ -707,6 +711,7 @@ async function batchCheckTuples(
   checks: RawCheck[],
   options?: { authorizationModelId?: string },
 ): Promise<BatchCheckResult<RawCheck>[]> {
+  assertBatchCheckArgument(checks);
   const chunks = splitIntoChunks(checks.map(toBatchCheckItem), MAX_CHECKS_PER_BATCH);
   const controller = new AbortController();
   const scope = transport.startCall(controller.signal);
@@ -753,6 +758,7 @@ function buildWriteBody(req: RawWrite, writeMode: string, deleteMode: string) {
 }
 
 async function writeTuples(transport: Transport, req: RawWrite): Promise<WriteResponse> {
+  assertWriteArgument(req);
   const writes = req.writes ?? [];
   const deletes = req.deletes ?? [];
   if (writes.length === 0 && deletes.length === 0) {

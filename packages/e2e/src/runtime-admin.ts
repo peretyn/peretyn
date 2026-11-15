@@ -17,6 +17,14 @@ export async function provisionEnvironment(spec: EnvironmentSpec): Promise<strin
   return createKey(internalUrl, { storeId, environmentName });
 }
 
+export async function provisionEnvironmentWithoutSchema(
+  spec: Omit<EnvironmentSpec, 'model'>,
+): Promise<string> {
+  const { internalUrl, environmentName } = spec;
+  const storeId = await createStore(internalUrl, `e2e-${environmentName}`);
+  return createKey(internalUrl, { storeId, environmentName });
+}
+
 async function createStore(internalUrl: string, name: string): Promise<string> {
   const store = (await internalPost(internalUrl, { path: '/v1/stores', body: { name } })) as {
     id: string;
