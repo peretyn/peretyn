@@ -14,6 +14,8 @@ const transport = selectTransport({
   mailpitUrl: process.env.PERETYN_MAILPIT_URL,
 });
 
+export const canDeliverEmail = transport !== undefined;
+
 if (!transport && production) {
   logError('no_email_transport', {
     detail:

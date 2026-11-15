@@ -25,6 +25,7 @@ import { Input } from '@peretyn/ui/components/input';
 import { Label } from '@peretyn/ui/components/label';
 import { Spinner } from '@peretyn/ui/components/spinner';
 import { cn } from '@peretyn/ui/lib/utils';
+import { useAuthSettings } from '@/components/auth-settings-provider';
 import { ProviderButtons, type SocialLayout } from './provider-buttons';
 
 export type SignInProps = {
@@ -61,6 +62,7 @@ export function SignIn({
     navigate,
     Link,
   } = useAuth();
+  const authSettings = useAuthSettings();
 
   const redirectTo = propsRedirectTo ?? defaultRedirectTo;
 
@@ -277,7 +279,7 @@ export function SignIn({
         </div>
 
         <div className="mt-4 flex w-full flex-col items-center gap-3">
-          {emailAndPassword?.forgotPassword && (
+          {emailAndPassword?.forgotPassword && authSettings.passwordReset && (
             <Link
               href={`${basePaths.auth}/${viewPaths.auth.forgotPassword}`}
               className="self-center text-sm underline-offset-4 hover:underline"
@@ -286,7 +288,7 @@ export function SignIn({
             </Link>
           )}
 
-          {emailAndPassword?.enabled && (
+          {emailAndPassword?.enabled && authSettings.signUp && (
             <FieldDescription className="text-center">
               {localization.auth.needToCreateAnAccount}{' '}
               <Link
