@@ -11,6 +11,8 @@ A project has two **environments**: `production` and `development`. Each environ
 
 The API key identifies the environment, so you never pass a project or environment id. Production keys start with `prn_live_`, and the others start with `prn_test_`. The SDK takes the key as its `token` option.
 
+The dashboard shows a key in full only once, when the project is created or the key is rotated. To get a new key, open the project's **API key** page, pick the environment with the switcher at the top right, and select **Rotate key**. The old key stops working at once, so update every app and CI job that uses it.
+
 ## Schemas and models
 
 A **schema** is the TypeScript that you write with `defineSchema`. It declares the types of things in your application, and how they relate.

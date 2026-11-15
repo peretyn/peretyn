@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { KeyRoundIcon } from 'lucide-react';
 
-import { Input } from '@peretyn/ui/components/input';
+import { Textarea } from '@peretyn/ui/components/textarea';
 import { CopyButton } from '@/components/copy-button';
 
 export function KeyReveal({ label, value }: { label: string; value: string }) {
@@ -13,8 +13,14 @@ export function KeyReveal({ label, value }: { label: string; value: string }) {
         <KeyRoundIcon className="size-3.5 text-muted-foreground" />
         {label}
       </label>
-      <div className="flex items-center gap-2">
-        <Input id={inputId} readOnly value={value} className="font-mono text-xs" />
+      <div className="flex items-start gap-2">
+        <Textarea
+          id={inputId}
+          readOnly
+          value={value}
+          onFocus={(event) => event.currentTarget.select()}
+          className="min-h-0 font-mono text-xs break-all md:text-xs"
+        />
         <CopyButton value={value} label={`Copy ${label}`} />
       </div>
     </div>
