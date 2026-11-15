@@ -43,9 +43,6 @@ func New(ctx context.Context, cfg Config) (*server.Server, func(), error) {
 		server.WithMaxConcurrentReadsForCheck(maxConcurrentReadsForCheck),
 		server.WithMaxConcurrentReadsForListObjects(maxConcurrentReadsForList),
 		server.WithMaxConcurrentReadsForListUsers(maxConcurrentReadsForList),
-		server.WithDispatchThrottlingCheckResolverEnabled(true),
-		server.WithListObjectsDispatchThrottlingEnabled(true),
-		server.WithListUsersDispatchThrottlingEnabled(true),
 	}
 
 	srv, err := server.NewServerWithOpts(opts...)
