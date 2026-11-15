@@ -8,6 +8,7 @@ import { keysRoute } from './routes/keys.js';
 import { schemasRoute } from './routes/schemas.js';
 import { dataPlaneRoute } from './routes/data-plane.js';
 import { publishRoute } from './routes/publish.js';
+import { authSettingsRoute } from './routes/auth-settings.js';
 import { protectRoute, type AuthVariables } from './middleware/protect-route.js';
 import { accessLog } from './middleware/access-log.js';
 import { logError } from './lib/log.js';
@@ -36,6 +37,7 @@ app.route('/manage/v1/projects', schemasRoute);
 app.route('/manage/v1/projects', dataPlaneRoute);
 
 app.route('/publish/v1', publishRoute);
+app.route('/public/v1/auth-settings', authSettingsRoute);
 
 app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw));
 

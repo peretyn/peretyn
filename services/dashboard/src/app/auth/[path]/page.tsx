@@ -2,8 +2,17 @@ import { basePaths, viewPaths } from '@better-auth-ui/core';
 import { notFound, redirect } from 'next/navigation';
 
 import { Auth } from '@/components/auth/auth';
+import { AuthSettingsProvider } from '@/components/auth-settings-provider';
+import type { AuthSettings } from '@/lib/auth-settings';
+import { getAuthSettings } from '@/lib/auth-settings.server';
 import { redirectIfAuthenticated } from '@/lib/dal';
 import { sameOriginPath } from '@/lib/same-origin-path';
+
+function isViewAvailable(path: string, settings: AuthSettings): boolean {
+  if (path === viewPaths.auth.signUp) return settings.signUp;
+  if (path === viewPaths.auth.forgotPassword) return settings.passwordReset;
+  return true;
+}
 
 const GUEST_ONLY_VIEWS: string[] = [
   viewPaths.auth.signIn,
@@ -34,5 +43,14 @@ export default async function AuthPage({
     await redirectIfAuthenticated();
   }
 
-  return <Auth path={path} redirectTo={safeRedirectTo} />;
+  const settings = await getAuthSettings();
+  if (!isViewAvailable(path, settings)) {
+    redirect(`${basePaths.auth}/${viewPaths.auth.signIn}`);
+  }
+
+  return (
+    <AuthSettingsProvider settings={settings}>
+      <Auth path={path} redirectTo={safeRedirectTo} />
+    </AuthSettingsProvider>
+  );
 }

@@ -4,6 +4,7 @@ import { db, schema } from './db/index.js';
 import { admin, organization } from 'better-auth/plugins';
 import { createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { sendAuthEmail } from './lib/email.js';
+import { isSignUpAllowed } from './lib/sign-up.js';
 import { Result } from '@praha/byethrow';
 import { ensureNotSoleOwner } from './services/sole-ownership.js';
 import { guardAdminUserRemoval } from './services/admin-removal-guard.js';
@@ -52,7 +53,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    disableSignUp: process.env.PERETYN_ALLOW_SIGNUP !== 'true',
+    disableSignUp: !isSignUpAllowed,
     requireEmailVerification: true,
     sendResetPassword: ({ user, url }) =>
       unwrapOrThrowAuthError(

@@ -129,6 +129,18 @@ docker compose exec control node services/control/dist/scripts/enroll.js teammat
 
 Admins manage users through the better-auth admin endpoints under `/api/auth/admin/*`.
 
+## Reset a password
+
+Without `PERETYN_RESEND_API_KEY`, the dashboard can't send reset emails, so it hides **Forgot password**. Reset any account's password, the admin's included, from the install directory:
+
+```sh
+docker compose exec control node services/control/dist/scripts/reset-password.js you@example.com 'new-password'
+```
+
+The new password must be 8 to 128 characters long. The command signs the account out everywhere.
+
+The sign-in page shows **Sign Up** only when `PERETYN_ALLOW_SIGNUP` is `true`, and **Forgot password** only when the stack can send email.
+
 ## Configuration
 
 | Variable                  | Required | Description                                                                 |
