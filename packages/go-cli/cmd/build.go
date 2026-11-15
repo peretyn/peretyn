@@ -105,10 +105,11 @@ func compileSchema(schemaAbs, exportName string) (compiledSchema, error) {
 	compiledPath := filepath.Join(dir, "compiled.json")
 
 	c := exec.Command(node, runnerPath, schemaAbs, exportName, compiledPath)
+	var stderr bytes.Buffer
 	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
+	c.Stderr = &stderr
 	if err := c.Run(); err != nil {
-		return compiled, fmt.Errorf("build: schema compile failed: %w", err)
+		return compiled, runnerFailure(err, stderr.String())
 	}
 
 	raw, err := os.ReadFile(compiledPath)
@@ -119,6 +120,14 @@ func compileSchema(schemaAbs, exportName string) (compiledSchema, error) {
 		return compiled, fmt.Errorf("build: parse runner output: %w", err)
 	}
 	return compiled, nil
+}
+
+func runnerFailure(err error, stderr string) error {
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		return fmt.Errorf("build: run schema compiler: %w", err)
+	}
+	return explainCompileFailure(compileFailure{exitCode: exitErr.ExitCode(), stderr: stderr})
 }
 
 func relativeToWorkingDirectory(path string) (string, error) {

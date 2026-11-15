@@ -8,6 +8,7 @@ export {
   schemaToOpenFGA,
   schemaToDsl,
 } from './schema.js';
+export { PeretynSchemaError } from './schema-validation.js';
 export type {
   PeretynSchema,
   RelationExpr,

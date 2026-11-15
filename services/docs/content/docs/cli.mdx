@@ -77,6 +77,13 @@ peretyn build --schema schema.ts
 | `-e`, `--export` | `schema`. The named export to read.          |
 | `-o`, `--out`    | The model path from [Configure](#configure). |
 
+`build` rejects a schema that the runtime would reject, such as one with an unknown type or an undefined relation. It prints where the mistake is:
+
+```txt
+peretyn: build: schema is invalid
+schema.ts:6:40: Peretyn schema: type "doc" permission "view": "ghost" is not a relation or permission of "doc"
+```
+
 ## `peretyn plan`
 
 Compares the model file with the model that the environment runs, and prints what `apply` would change:
