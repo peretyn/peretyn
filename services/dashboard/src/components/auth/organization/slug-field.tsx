@@ -71,6 +71,12 @@ export function SlugField({ value, onChange, currentSlug, disabled, id = 'slug' 
     debouncer.maybeExecute(value);
   }, [checkSlugEnabled, value, debouncer.maybeExecute, resetCheckSlug]);
 
+  useEffect(() => {
+    if (disabled) debouncer.cancel();
+  }, [disabled, debouncer.cancel]);
+
+  useEffect(() => debouncer.cancel, [debouncer.cancel]);
+
   return (
     <Field data-invalid={!!slugError}>
       <Label htmlFor={id}>{localization.slug}</Label>

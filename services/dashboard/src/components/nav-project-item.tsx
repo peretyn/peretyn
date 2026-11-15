@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@peretyn/ui/components/collapsible';
 import {
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -16,6 +18,8 @@ import {
 import { ChevronRightIcon, FolderIcon, Trash2Icon } from 'lucide-react';
 import type { Project } from '@/lib/control/types';
 import { PROJECT_PAGES } from './project/project-pages';
+
+const OVERVIEW_PAGE = 'overview';
 
 type NavProjectItemProps = {
   project: Project;
@@ -59,6 +63,16 @@ function DeleteProjectItem({ onClick }: { onClick: () => void }) {
   );
 }
 
+function useOpenWhenActive(isActive: boolean) {
+  const [isOpen, setIsOpen] = useState(isActive);
+  const [wasActive, setWasActive] = useState(isActive);
+  if (isActive !== wasActive) {
+    setWasActive(isActive);
+    if (isActive) setIsOpen(true);
+  }
+  return [isOpen, setIsOpen] as const;
+}
+
 export function NavProjectItem({
   project,
   pathname,
@@ -68,15 +82,21 @@ export function NavProjectItem({
 }: NavProjectItemProps) {
   const base = `/projects/${project.id}`;
   const isActive = pathname.startsWith(base);
+  const [isOpen, setIsOpen] = useOpenWhenActive(isActive);
   return (
-    <Collapsible asChild defaultOpen={isActive} className="group/collapsible">
+    <Collapsible asChild open={isOpen} onOpenChange={setIsOpen} className="group/collapsible">
       <SidebarMenuItem>
-        <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={project.name} isActive={isActive}>
+        <SidebarMenuButton asChild tooltip={project.name} isActive={isActive}>
+          <Link href={`${base}/${OVERVIEW_PAGE}${envSuffix}`}>
             <FolderIcon />
             <span>{project.name}</span>
-            <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-          </SidebarMenuButton>
+          </Link>
+        </SidebarMenuButton>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuAction className="group-data-[state=open]/collapsible:rotate-90">
+            <ChevronRightIcon />
+            <span className="sr-only">Toggle {project.name} pages</span>
+          </SidebarMenuAction>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarMenuSub>
