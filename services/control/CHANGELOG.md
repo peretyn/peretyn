@@ -1,5 +1,11 @@
 # @peretyn/control
 
+## 0.4.0
+
+### Minor Changes
+
+- eb6228f: The sign-in page hides Sign Up when sign-up is disabled, and Forgot password when the stack can't send email. Self-hosters can reset any password with the new `reset-password` script.
+
 ## 0.3.2
 
 ## 0.3.1

@@ -1,5 +1,16 @@
 # @peretyn/dashboard
 
+## 0.4.0
+
+### Patch Changes
+
+- c93c09f: New API keys show in full in a wrapped, copyable field, and the API key page labels the environment of its key. The docs describe how to rotate a lost key.
+- eb6228f: The sign-in page hides Sign Up when sign-up is disabled, and Forgot password when the stack can't send email. Self-hosters can reset any password with the new `reset-password` script.
+- 1ea034a: Creating an organization no longer shows a stray "slug already taken" toast, and clicking a project in the sidebar opens it while the chevron expands its pages.
+- Updated dependencies [38a2799]
+- Updated dependencies [457383f]
+  - @peretyn/sdk@0.2.0
+
 ## 0.3.2
 
 ## 0.3.1
