@@ -1,3 +1,6 @@
+import { parseTargetType, toExpr, type RelationReference } from './schema-expr.js';
+import { validateSchema } from './schema-validation.js';
+
 /** Another relation or permission on the same type, by name. */
 export interface RelationRef {
   readonly kind: 'ref';
@@ -66,8 +69,8 @@ export function type<T extends TypeDef = TypeDef>(def: T = {} as T): T {
 
 /**
  * Validates a schema and returns it unchanged, keeping its literal type for
- * `peretyn<typeof schema>()`. Throws on a relation with no targets or a bare
- * `'*'` target.
+ * `peretyn<typeof schema>()`. Throws a `PeretynSchemaError` on a mistake the
+ * runtime would reject, such as an unknown type or an undefined relation.
  */
 export function defineSchema<S extends PeretynSchema>(schema: S): S {
   validateSchema(schema);
@@ -97,47 +100,7 @@ export function via(tupleset: string, relation: string): ViaExpr {
   return { kind: 'via', tupleset, relation };
 }
 
-function toExpr(p: Permission): RelationExpr {
-  if (typeof p === 'string') {
-    return { kind: 'ref', name: p };
-  }
-  return p;
-}
-
-function validateSchema(schema: PeretynSchema): void {
-  for (const [typeName, def] of Object.entries(schema)) {
-    const relations = def.relations ?? {};
-    for (const [relName, targets] of Object.entries(relations)) {
-      validateRelationTargets(typeName, relName, targets);
-    }
-  }
-}
-
-function validateRelationTargets(
-  typeName: string,
-  relName: string,
-  targets: readonly string[],
-): void {
-  if (!Array.isArray(targets) || targets.length === 0) {
-    throw new Error(
-      `Peretyn schema: type "${typeName}" relation "${relName}" must declare at least one target type.`,
-    );
-  }
-  if (targets.includes('*')) {
-    throw new Error(
-      `Peretyn schema: type "${typeName}" relation "${relName}" has a bare "*" target; name the type, e.g. "user:*".`,
-    );
-  }
-}
-
 const SCHEMA_VERSION = '1.1';
-const WILDCARD_SUFFIX = ':*';
-
-interface RelationReference {
-  type: string;
-  relation?: string;
-  wildcard?: object;
-}
 
 type RelationMetadata = Record<string, { directly_related_user_types: RelationReference[] }>;
 
@@ -153,6 +116,7 @@ export interface OpenFGAModel {
 
 /** Compiles a schema to an OpenFGA authorization model. */
 export function schemaToOpenFGA(schema: PeretynSchema): OpenFGAModel {
+  validateSchema(schema);
   const type_definitions = Object.entries(schema).map(([typeName, def]) =>
     typeToOpenFGA(typeName, def),
   );
@@ -179,17 +143,6 @@ function typeToOpenFGA(typeName: string, def: TypeDef): OpenFGAModel['type_defin
   return { type: typeName, relations, metadata: { relations: metadataRelations } };
 }
 
-function parseTargetType(target: string): RelationReference {
-  if (target.endsWith(WILDCARD_SUFFIX)) {
-    return { type: target.slice(0, -WILDCARD_SUFFIX.length), wildcard: {} };
-  }
-  const hashIdx = target.indexOf('#');
-  if (hashIdx >= 0) {
-    return { type: target.slice(0, hashIdx), relation: target.slice(hashIdx + 1) };
-  }
-  return { type: target };
-}
-
 function exprToOpenFGA(expr: RelationExpr): unknown {
   switch (expr.kind) {
     case 'ref':
@@ -202,12 +155,20 @@ function exprToOpenFGA(expr: RelationExpr): unknown {
         },
       };
     case 'union':
-      return { union: { child: expr.children.map(exprToOpenFGA) } };
+      return combinatorToOpenFGA('union', expr.children);
     case 'intersection':
-      return { intersection: { child: expr.children.map(exprToOpenFGA) } };
+      return combinatorToOpenFGA('intersection', expr.children);
     case 'difference':
       return differenceToOpenFGA(expr.children);
   }
+}
+
+function combinatorToOpenFGA(kind: 'union' | 'intersection', children: readonly RelationExpr[]) {
+  const [onlyChild] = children;
+  if (children.length === 1 && onlyChild) {
+    return exprToOpenFGA(onlyChild);
+  }
+  return { [kind]: { child: children.map(exprToOpenFGA) } };
 }
 
 function differenceToOpenFGA(children: readonly RelationExpr[]): unknown {

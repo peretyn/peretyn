@@ -45,6 +45,8 @@ Build permissions with these functions:
 | `exclude(a, b)`   | the subject has `a` but not `b`                            |
 | `via(link, name)` | the subject has `name` on the object that `link` points to |
 
+To expose a relation as a permission under another name, give the permission the relation's name, such as `manage: 'admin'`.
+
 This schema describes the tuples in the table above. A user can view a document when they own it, or when they can view its parent folder:
 
 <include>../../snippets/concepts/schema.ts</include>
