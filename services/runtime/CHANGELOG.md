@@ -1,5 +1,11 @@
 # @peretyn/runtime
 
+## 0.3.2
+
+### Patch Changes
+
+- 16f560e: Stop the runtime burning CPU while idle by turning off OpenFGA dispatch throttling, whose tickers woke up every 10µs.
+
 ## 0.3.1
 
 ### Patch Changes
