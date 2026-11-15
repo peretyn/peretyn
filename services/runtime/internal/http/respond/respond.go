@@ -48,15 +48,21 @@ func decode(w http.ResponseWriter, r *http.Request, unmarshal func([]byte) error
 	return true
 }
 
+type Explainer interface {
+	Explain(ctx context.Context, storeID string, err error) (string, bool)
+}
+
 type Operation struct {
-	Logger *zap.Logger
-	Name   string
+	Logger    *zap.Logger
+	Name      string
+	Explainer Explainer
 }
 
 type FailureDetails struct {
 	Operation  Operation
 	StatusCode int
 	Err        error
+	StoreID    string
 }
 
 type failureReport struct {
@@ -77,7 +83,7 @@ func Engine[Req any, PReq interface {
 		m.Set(m.Descriptor().Fields().ByName("store_id"), protoreflect.ValueOfString(storeID(r)))
 		resp, err := call(r.Context(), req)
 		if err != nil {
-			EngineError(w, r, FailureDetails{Operation: operation, Err: err})
+			EngineError(w, r, FailureDetails{Operation: operation, Err: err, StoreID: storeID(r)})
 			return
 		}
 		Proto(w, http.StatusOK, resp)
@@ -119,7 +125,18 @@ func Failure(w http.ResponseWriter, r *http.Request, details FailureDetails) {
 func EngineError(w http.ResponseWriter, r *http.Request, details FailureDetails) {
 	statusCode, msg := engineStatus(details.Err)
 	details.StatusCode = statusCode
-	failure(w, r, failureReport{FailureDetails: details, message: msg})
+	failure(w, r, failureReport{FailureDetails: details, message: explainClientError(r.Context(), details, msg)})
+}
+
+func explainClientError(ctx context.Context, details FailureDetails, engineMessage string) string {
+	explainer := details.Operation.Explainer
+	if explainer == nil || details.StatusCode >= http.StatusInternalServerError {
+		return engineMessage
+	}
+	if explained, ok := explainer.Explain(ctx, details.StoreID, details.Err); ok {
+		return explained
+	}
+	return engineMessage
 }
 
 func failure(w http.ResponseWriter, r *http.Request, report failureReport) {

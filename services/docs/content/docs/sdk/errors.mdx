@@ -8,6 +8,21 @@ description: What the SDK throws, and how to fail closed.
 | `PeretynError`            | The runtime answered with an error status. It has `status` and `body`. `assert` throws it with `403` on a deny. |
 | `PeretynUnavailableError` | The SDK couldn't reach the runtime.                                                                             |
 | `PeretynTimeoutError`     | The call ran out of `timeoutMs`. It extends `PeretynUnavailableError`.                                          |
+| `PeretynSchemaError`      | `defineSchema` found a mistake that the runtime would reject, such as an undefined relation.                    |
+| `TypeError`               | A method got the wrong arguments. The SDK throws it before calling the runtime.                                 |
+
+## Common mistakes
+
+Each message names the mistake and the fix:
+
+| Mistake                                         | Error                                                                                                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Writing a tuple to a permission                 | `PeretynError` 400: `"can_view" is a permission of "document", so tuples can't be written to it. Write the tuple to a relation that "can_view" is computed from.`        |
+| Writing a subject type the relation can't hold  | `PeretynError` 400: `relation "viewer" of "document" doesn't accept "team" subjects. The schema allows: user. Add "team" to its targets, or write a subject it accepts.` |
+| Naming a relation the schema doesn't have       | `PeretynError` 400: `"ghost" is not a relation or permission of "document" in the published schema.`                                                                     |
+| Naming a type the schema doesn't have           | `PeretynError` 400: `"folder" is not a type in the published schema.`                                                                                                    |
+| Calling the environment before the first schema | `PeretynError` 400: `this environment has no published schema yet. Publish one with "peretyn apply", then retry.`                                                        |
+| Passing an object to `batchCheck`               | `TypeError`: `peretyn: batchCheck() takes an array of checks, such as [{ subject, relation, object }]; got an object`                                                    |
 
 ## Fail closed or fail open
 
