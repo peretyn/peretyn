@@ -1,6 +1,6 @@
 {
   "name": "@peretyn/sdk",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Peretyn TypeScript SDK — typed client for the Peretyn runtime.",
   "keywords": [
     "authorization",
