@@ -8,6 +8,7 @@ RAW_ORIGIN="https://raw.githubusercontent.com/$REPOSITORY"
 DEFAULT_DIR="/opt/peretyn"
 DEPLOY_FILES="compose.yaml Caddyfile"
 REQUIRED_PORTS="80 443"
+DATABASE_VOLUME="peretyn_postgres-data"
 CONTROL_HEALTH_URL="http://127.0.0.1:3001/healthz"
 CONTROL_READY_ATTEMPTS=60
 CONTROL_READY_DELAY_SECONDS=2
@@ -17,6 +18,7 @@ CLI_INSTALL_URL="https://peretyn.dev/install-cli"
 QUICKSTART_URL="https://docs.peretyn.dev/quickstart"
 SECRET_BYTES=32
 ADMIN_PASSWORD_BYTES=12
+ASKED_A_QUESTION=no
 
 say() {
   printf '%s\n' "$*"
@@ -37,6 +39,16 @@ download() {
 
 has_terminal() {
   [ -r /dev/tty ] && (: </dev/tty) 2>/dev/null
+}
+
+read_answer() {
+  if has_command bash; then
+    bash -c 'IFS= read -r -e -p "$1" answer && printf "%s" "$answer"' read_answer "$1" </dev/tty 2>/dev/tty
+    return
+  fi
+  printf '%s' "$1" >/dev/tty
+  IFS= read -r answer </dev/tty
+  printf '%s' "$answer"
 }
 
 value_or() {
@@ -67,9 +79,7 @@ unattended_example() {
 fail_without_terminal() {
   fail "$1 is not set and there is no terminal to ask for it. Set every answer as a variable and run again, for example:
 
-  $(unattended_example)
-
-To try peretyn on this machine without a domain, use PERETYN_DOMAIN=$LOCAL_DOMAIN."
+  $(unattended_example)"
 }
 
 ask() {
@@ -80,8 +90,19 @@ ask() {
     return
   fi
   has_terminal || fail_without_terminal "$name"
-  printf '%s ' "$question" >/dev/tty
-  read -r "${name?}" </dev/tty
+  ASKED_A_QUESTION=yes
+  answer=$(read_answer "$question ")
+  eval "$name=\$answer"
+}
+
+ask_with_default() {
+  eval "is_set=\${$1+set}"
+  if [ -z "$is_set" ] && has_terminal; then
+    ASKED_A_QUESTION=yes
+    answer=$(read_answer "$2 [$3]: ")
+    eval "$1=\$answer"
+  fi
+  eval "$1=\${$1:-\$3}"
 }
 
 require_value() {
@@ -108,6 +129,13 @@ check_ports_are_free() {
       fail "port $port is already in use. Caddy needs ports 80 and 443."
     fi
   done
+}
+
+refuse_leftover_database() {
+  docker volume inspect "$DATABASE_VOLUME" >/dev/null 2>&1 || return 0
+  fail "the Docker volume $DATABASE_VOLUME already holds a peretyn database from an earlier install, and a new install can't open it with new secrets.
+To keep that data, put the earlier install's .env in $PERETYN_DIR and run again.
+To start over, stop the earlier stack, delete the volume with 'docker volume rm $DATABASE_VOLUME' (this deletes its data), and run again."
 }
 
 is_ip_address() {
@@ -206,16 +234,11 @@ expand_home() {
 }
 
 choose_install_dir() {
-  if [ -n "${PERETYN_DIR+set}" ]; then
-    PERETYN_DIR=$(expand_home "${PERETYN_DIR:-$DEFAULT_DIR}")
-    return
+  if [ -z "${PERETYN_DIR+set}" ] && [ -f "$DEFAULT_DIR/.env" ]; then
+    PERETYN_DIR="$DEFAULT_DIR"
   fi
-  PERETYN_DIR="$DEFAULT_DIR"
-  [ ! -f "$DEFAULT_DIR/.env" ] || return 0
-  has_terminal || return 0
-  printf 'Install directory [%s]: ' "$DEFAULT_DIR" >/dev/tty
-  read -r answer </dev/tty
-  PERETYN_DIR=$(expand_home "${answer:-$DEFAULT_DIR}")
+  ask_with_default PERETYN_DIR "Install directory" "$DEFAULT_DIR"
+  PERETYN_DIR=$(expand_home "$PERETYN_DIR")
 }
 
 enter_install_dir() {
@@ -272,13 +295,39 @@ Create it from $PERETYN_DIR with: docker compose exec control node services/cont
 }
 
 collect_install_answers() {
-  ask PERETYN_DOMAIN "Domain for peretyn (e.g. peretyn.example.com):"
-  require_value PERETYN_DOMAIN
+  ask_with_default PERETYN_DOMAIN "Domain for peretyn (e.g. peretyn.example.com)" "$LOCAL_DOMAIN"
   check_domain
   ask PERETYN_ADMIN_EMAIL "Admin email:"
   require_value PERETYN_ADMIN_EMAIL
   ask PERETYN_ADMIN_NAME "Admin name (optional):"
   ask PERETYN_RESEND_API_KEY "Resend API key for email (optional, leave empty to send no email):"
+}
+
+email_status() {
+  if [ -n "${PERETYN_RESEND_API_KEY:-}" ]; then
+    printf 'on'
+    return
+  fi
+  printf 'off (no Resend API key)'
+}
+
+confirm_install() {
+  [ "$ASKED_A_QUESTION" = yes ] || return 0
+  {
+    printf '\nperetyn %s is ready to install:\n' "$PERETYN_TAG"
+    printf '  Directory  %s\n' "$PERETYN_DIR"
+    printf '  URL        %s\n' "$(public_url)"
+    printf '  Admin      %s\n' "$PERETYN_ADMIN_EMAIL"
+    printf '  Email      %s\n' "$(email_status)"
+  } >/dev/tty
+  answer=$(read_answer 'Install? [Y/n] ')
+  case "$answer" in
+  "" | [Yy] | [Yy][Ee][Ss]) ;;
+  *)
+    say "Nothing was installed."
+    exit 0
+    ;;
+  esac
 }
 
 say_when_local_install() {
@@ -288,7 +337,11 @@ say_when_local_install() {
 
 say_when_email_is_off() {
   [ -z "${PERETYN_RESEND_API_KEY:-}" ] || return 0
-  say "Email is off, so there are no password resets or invitations. To turn it on, set PERETYN_RESEND_API_KEY in $PERETYN_DIR/.env and run 'docker compose up -d'."
+  say "Email is off, so there are no password resets or invitations. To turn it on, set PERETYN_RESEND_API_KEY in $PERETYN_DIR/.env."
+}
+
+say_where_settings_live() {
+  say "Your settings are in $PERETYN_DIR/.env. To change one, edit it and run 'docker compose up -d' in $PERETYN_DIR. Keep the generated secrets as they are: the database and sign-ins depend on them."
 }
 
 say_credentials() {
@@ -308,8 +361,10 @@ say_next_steps() {
 }
 
 install() {
+  refuse_leftover_database
   check_ports_are_free
   collect_install_answers
+  confirm_install
   download_deploy_files
   write_env_file
   start_stack
@@ -319,11 +374,22 @@ install() {
   say "peretyn $PERETYN_TAG is running at $(public_url)"
   say_when_local_install
   say_when_email_is_off
+  say_where_settings_live
   say_credentials
   say_next_steps
 }
 
+installed_version() {
+  sed -n 's/^PERETYN_TAG=//p' .env
+}
+
 upgrade() {
+  current=$(installed_version)
+  if [ "$current" = "$PERETYN_TAG" ]; then
+    say "peretyn is already on $PERETYN_TAG in $PERETYN_DIR. Nothing to do."
+    return
+  fi
+  say "Upgrading peretyn in $PERETYN_DIR from $current to $PERETYN_TAG."
   download_deploy_files
   set_env_tag
   start_stack
