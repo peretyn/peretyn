@@ -1,5 +1,11 @@
 # @peretyn/docs
 
+## 0.7.0
+
+### Minor Changes
+
+- fd74d72: Measure docs visits with Umami Cloud, served through docs.peretyn.dev so ad blockers don't hide readers.
+
 ## 0.6.2
 
 ### Patch Changes
