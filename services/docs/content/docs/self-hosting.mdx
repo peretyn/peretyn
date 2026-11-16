@@ -24,6 +24,8 @@ It asks for the install directory, your domain and the first admin's email. It s
 - starts the stack,
 - creates the admin account and prints its password once.
 
+Your answers are saved in `.env` in the install directory. To change one later, edit it there and run `docker compose up -d` in that directory. Keep the generated secrets as they are.
+
 The install directory defaults to `/opt/peretyn`, which needs root. As a user in the `docker` group, answer with a directory you own, such as `~/peretyn`. Run the same command again to upgrade: it finds the existing install in `/opt/peretyn` without asking, and says which version it upgrades from and to. When you already have the latest version, it does nothing. For any other directory, set `PERETYN_DIR` on the `sh` side of the pipe:
 
 ```sh
@@ -46,7 +48,7 @@ curl -fsSL https://peretyn.dev/install | \
 
 | Variable                 | Description                                                                                          |
 | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `PERETYN_DOMAIN`         | The domain that Caddy serves, or `localhost`. Required.                                              |
+| `PERETYN_DOMAIN`         | The domain that Caddy serves. Defaults to `localhost`.                                               |
 | `PERETYN_ADMIN_EMAIL`    | The first admin's email. Required.                                                                   |
 | `PERETYN_ADMIN_NAME`     | The first admin's name. Set it empty to use the email's local part.                                  |
 | `PERETYN_RESEND_API_KEY` | A [Resend](https://resend.com) API key. Set it empty to send no email.                               |
@@ -233,7 +235,7 @@ To restore on a new host, put `compose.yaml`, the `Caddyfile` and your old `.env
 
 ## Upgrade
 
-Run the installer again. It keeps `.env` and its secrets, moves `PERETYN_TAG` and the deploy files to the latest release, then pulls the new images and restarts. Set `PERETYN_TAG` to pick a version.
+Run the installer again. It keeps `.env` and its secrets, moves `PERETYN_TAG` and the deploy files to the latest release, then pulls the new images and restarts. When you already have the latest release, it does nothing. Set `PERETYN_TAG` to pick a version.
 
 By hand: change `PERETYN_TAG` in `.env`, then pull the new images and restart:
 
@@ -253,7 +255,7 @@ To stop Peretyn and keep the data, run this from the install directory:
 docker compose down
 ```
 
-The volumes stay. `docker compose up -d` starts the stack again with the same data.
+The volumes stay. `docker compose up -d` starts the stack again with the same data. Keep `.env` with them: the data opens only with its secrets, so the installer refuses a new install while the database volume exists.
 
 To delete everything, including every tuple, account and certificate:
 
