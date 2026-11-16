@@ -46,6 +46,10 @@ describe('the docs site', () => {
     const referencePages = [...pages].filter(([path]) => path.startsWith('/reference/'));
     expect(referencePages.some(([, page]) => page.html.includes('/v1/check'))).toBe(true);
   });
+
+  it('loads the analytics tracker through its own origin', () => {
+    expect(pages.get('/')?.html).toContain('/insights/script.js');
+  });
 });
 
 describe('llms.txt', () => {
