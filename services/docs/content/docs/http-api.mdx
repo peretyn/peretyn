@@ -7,12 +7,12 @@ The TypeScript SDK is a client for the runtime's HTTP API. From any other langua
 
 ## Base URL and authentication
 
-The API is served under `/v1` at the runtime URL: `https://app.peretyn.dev`, or your own domain if you [self-host](/self-hosting).
+The API is served under `/v1` at the runtime URL, which is your Peretyn's URL: `http://localhost` for an install on [this machine](/self-hosting#try-it-on-this-machine), or your domain on a server.
 
 Send the API key of an environment as a bearer token. The key selects the environment and the store that holds its tuples, so no request carries a project, environment or store id.
 
 ```sh
-export PERETYN_RUNTIME_URL=https://app.peretyn.dev
+export PERETYN_RUNTIME_URL=http://localhost
 export PERETYN_TOKEN=prn_test_...
 ```
 
