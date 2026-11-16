@@ -1,5 +1,11 @@
 # @peretyn/docs
 
+## 0.7.1
+
+### Patch Changes
+
+- 35f0c47: The HTTP API and self-hosting pages use a self-hosted Peretyn URL instead of `app.peretyn.dev`.
+
 ## 0.7.0
 
 ### Minor Changes
