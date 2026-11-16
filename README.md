@@ -35,6 +35,10 @@ const { allowed } = await authz.check({
 
 The SDK checks every type and relation name at compile time.
 
+## Try it
+
+Peretyn is self-hosted. Start the stack on your machine with one command by following [Try it on this machine](https://docs.peretyn.dev/self-hosting#try-it-on-this-machine), then run your first check with the [Quickstart](https://docs.peretyn.dev/quickstart).
+
 ## Documentation
 
 - [Quickstart](https://docs.peretyn.dev/quickstart): from an empty project to your first check.

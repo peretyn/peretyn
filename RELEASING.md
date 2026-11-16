@@ -46,6 +46,6 @@ already-published versions, image tags re-push idempotently, binary uploads
 `--clobber`. Re-run the failed workflow until green. Yanking a bad snapshot:
 deprecate the npm version / move the dist-tag / delete the GHCR tag.
 
-**Consuming pre-releases**: `pnpm add @peretyn/sdk@canary`. Containers:
-`docker login ghcr.io` with a PAT with `read:packages`; deployable stack in
+**Consuming pre-releases**: `pnpm add @peretyn/sdk@canary`. Containers are
+public on GHCR: set `PERETYN_TAG=canary` in the deployable stack in
 `deploy/compose.yaml`.
