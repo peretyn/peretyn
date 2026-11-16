@@ -1,5 +1,11 @@
 # @peretyn/runtime
 
+## 0.4.1
+
+### Patch Changes
+
+- 657d15c: The installer asks for the install directory at a terminal, defaulting to `/opt/peretyn`, and expands a leading `~` in `PERETYN_DIR`.
+
 ## 0.4.0
 
 ### Minor Changes
