@@ -127,6 +127,15 @@ jobs:
           grep -q 'Install directory \[/opt/peretyn\]' prompted.log
           test -d "$HOME/prompted-install"
 
+      - name: At a terminal, declining the summary installs nothing
+        run: |
+          { for answer in '~/declined-install' localhost admin@example.com '' '' n; do printf '%s\n' "$answer"; sleep 2; done; sleep 3; } |
+            script -qec 'env -u PERETYN_DIR -u PERETYN_DOMAIN -u PERETYN_ADMIN_EMAIL -u PERETYN_ADMIN_NAME -u PERETYN_RESEND_API_KEY PERETYN_TAG=unused sh deploy/install.sh' /dev/null >declined.log
+          grep -q 'Install? \[Y/n\]' declined.log
+          grep -q 'Nothing was installed.' declined.log
+          test ! -e "$HOME/declined-install/.env"
+          test -z "$(docker ps -aq)"
+
       - name: Install unattended
         run: |
           set -o pipefail
@@ -153,10 +162,17 @@ jobs:
 
       - name: Running again upgrades and keeps the secrets
         run: |
+          tag=$(sed -n 's/^PERETYN_TAG=//p' "$PERETYN_DIR/.env")
+          sed -i 's/^PERETYN_TAG=.*/PERETYN_TAG=0.0.0/' "$PERETYN_DIR/.env"
           before=$(grep -v '^PERETYN_TAG=' "$PERETYN_DIR/.env" | sha256sum)
-          sh deploy/install.sh </dev/null
+          sh deploy/install.sh </dev/null | tee upgrade.log
+          grep -q "from 0.0.0 to $tag" upgrade.log
           after=$(grep -v '^PERETYN_TAG=' "$PERETYN_DIR/.env" | sha256sum)
           test "$before" = "$after"
+          grep -q "^PERETYN_TAG=$tag$" "$PERETYN_DIR/.env"
+
+      - name: Running again on the same version does nothing
+        run: sh deploy/install.sh </dev/null | grep -q 'Nothing to do.'
 
       - name: Collect stack logs
         if: always()

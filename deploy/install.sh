@@ -17,6 +17,7 @@ CLI_INSTALL_URL="https://peretyn.dev/install-cli"
 QUICKSTART_URL="https://docs.peretyn.dev/quickstart"
 SECRET_BYTES=32
 ADMIN_PASSWORD_BYTES=12
+ASKED_A_QUESTION=no
 
 say() {
   printf '%s\n' "$*"
@@ -80,6 +81,7 @@ ask() {
     return
   fi
   has_terminal || fail_without_terminal "$name"
+  ASKED_A_QUESTION=yes
   printf '%s ' "$question" >/dev/tty
   read -r "${name?}" </dev/tty
 }
@@ -213,6 +215,7 @@ choose_install_dir() {
   PERETYN_DIR="$DEFAULT_DIR"
   [ ! -f "$DEFAULT_DIR/.env" ] || return 0
   has_terminal || return 0
+  ASKED_A_QUESTION=yes
   printf 'Install directory [%s]: ' "$DEFAULT_DIR" >/dev/tty
   read -r answer </dev/tty
   PERETYN_DIR=$(expand_home "${answer:-$DEFAULT_DIR}")
@@ -281,6 +284,34 @@ collect_install_answers() {
   ask PERETYN_RESEND_API_KEY "Resend API key for email (optional, leave empty to send no email):"
 }
 
+email_status() {
+  if [ -n "${PERETYN_RESEND_API_KEY:-}" ]; then
+    printf 'on'
+    return
+  fi
+  printf 'off (no Resend API key)'
+}
+
+confirm_install() {
+  [ "$ASKED_A_QUESTION" = yes ] || return 0
+  {
+    printf '\nperetyn %s is ready to install:\n' "$PERETYN_TAG"
+    printf '  Directory  %s\n' "$PERETYN_DIR"
+    printf '  URL        %s\n' "$(public_url)"
+    printf '  Admin      %s\n' "$PERETYN_ADMIN_EMAIL"
+    printf '  Email      %s\n' "$(email_status)"
+    printf 'Install? [Y/n] '
+  } >/dev/tty
+  read -r answer </dev/tty
+  case "$answer" in
+  "" | [Yy] | [Yy][Ee][Ss]) ;;
+  *)
+    say "Nothing was installed."
+    exit 0
+    ;;
+  esac
+}
+
 say_when_local_install() {
   is_local_install || return 0
   say "This is a local evaluation install. It serves plain HTTP, so use it only from this machine."
@@ -310,6 +341,7 @@ say_next_steps() {
 install() {
   check_ports_are_free
   collect_install_answers
+  confirm_install
   download_deploy_files
   write_env_file
   start_stack
@@ -323,7 +355,17 @@ install() {
   say_next_steps
 }
 
+installed_version() {
+  sed -n 's/^PERETYN_TAG=//p' .env
+}
+
 upgrade() {
+  current=$(installed_version)
+  if [ "$current" = "$PERETYN_TAG" ]; then
+    say "peretyn is already on $PERETYN_TAG in $PERETYN_DIR. Nothing to do."
+    return
+  fi
+  say "Upgrading peretyn in $PERETYN_DIR from $current to $PERETYN_TAG."
   download_deploy_files
   set_env_tag
   start_stack

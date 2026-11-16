@@ -17,14 +17,14 @@ Run the installer as root:
 curl -fsSL https://peretyn.dev/install | sh
 ```
 
-It asks for the install directory, your domain and the first admin's email, then:
+It asks for the install directory, your domain and the first admin's email. It shows a summary of your answers and asks you to confirm, then:
 
 - pins the latest `@peretyn/runtime` release and downloads `compose.yaml` and the `Caddyfile` from that release into the install directory,
 - generates every secret into `.env`, readable only by its owner,
 - starts the stack,
 - creates the admin account and prints its password once.
 
-The install directory defaults to `/opt/peretyn`, which needs root. As a user in the `docker` group, answer with a directory you own, such as `~/peretyn`. Run the same command again to upgrade: it finds the existing install in `/opt/peretyn` without asking. For any other directory, set `PERETYN_DIR` on the `sh` side of the pipe:
+The install directory defaults to `/opt/peretyn`, which needs root. As a user in the `docker` group, answer with a directory you own, such as `~/peretyn`. Run the same command again to upgrade: it finds the existing install in `/opt/peretyn` without asking, and says which version it upgrades from and to. When you already have the latest version, it does nothing. For any other directory, set `PERETYN_DIR` on the `sh` side of the pipe:
 
 ```sh
 curl -fsSL https://peretyn.dev/install | PERETYN_DIR=~/peretyn sh
@@ -32,7 +32,7 @@ curl -fsSL https://peretyn.dev/install | PERETYN_DIR=~/peretyn sh
 
 ### Unattended install
 
-Every question has a variable. Set them all, even to an empty value, and the installer asks nothing. Use this form over `ssh` or in CI, where there is no terminal to answer questions:
+Every question has a variable. Set them all, even to an empty value, and the installer asks nothing, not even for confirmation. Use this form over `ssh` or in CI, where there is no terminal to answer questions:
 
 ```sh
 curl -fsSL https://peretyn.dev/install | \
@@ -44,14 +44,15 @@ curl -fsSL https://peretyn.dev/install | \
   sh
 ```
 
-| Variable                 | Description                                                            |
-| ------------------------ | ---------------------------------------------------------------------- |
-| `PERETYN_DOMAIN`         | The domain that Caddy serves, or `localhost`. Required.                |
-| `PERETYN_ADMIN_EMAIL`    | The first admin's email. Required.                                     |
-| `PERETYN_ADMIN_NAME`     | The first admin's name. Set it empty to use the email's local part.    |
-| `PERETYN_RESEND_API_KEY` | A [Resend](https://resend.com) API key. Set it empty to send no email. |
-| `PERETYN_TAG`            | The version to install. Defaults to the latest release.                |
-| `PERETYN_DIR`            | The install directory. Set it empty to use `/opt/peretyn`.             |
+| Variable                 | Description                                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `PERETYN_DOMAIN`         | The domain that Caddy serves, or `localhost`. Required.                                              |
+| `PERETYN_ADMIN_EMAIL`    | The first admin's email. Required.                                                                   |
+| `PERETYN_ADMIN_NAME`     | The first admin's name. Set it empty to use the email's local part.                                  |
+| `PERETYN_RESEND_API_KEY` | A [Resend](https://resend.com) API key. Set it empty to send no email.                               |
+| `PERETYN_TAG`            | The version to install. Defaults to the latest release.                                              |
+| `PERETYN_DIR`            | The install directory. Set it empty to use `/opt/peretyn`.                                           |
+| `GITHUB_TOKEN`           | Optional. A GitHub token for the latest-release lookup, needed only when GitHub rate-limits your IP. |
 
 ### Try it on this machine
 
