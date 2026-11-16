@@ -114,6 +114,19 @@ jobs:
           ! env -u PERETYN_DOMAIN PERETYN_TAG=unused PERETYN_DIR="$RUNNER_TEMP/no-answers" sh deploy/install.sh </dev/null 2>no-answers.log
           grep -q 'curl -fsSL https://peretyn.dev/install | PERETYN_DOMAIN=peretyn.example.com PERETYN_ADMIN_EMAIL=admin@example.com' no-answers.log
 
+      - name: A quoted ~ in PERETYN_DIR means the home directory
+        run: |
+          ! PERETYN_TAG=unused PERETYN_DOMAIN=1.2.3.4 PERETYN_DIR='~/quoted-tilde' sh deploy/install.sh </dev/null 2>/dev/null
+          test -d "$HOME/quoted-tilde"
+          test ! -e '~'
+
+      - name: At a terminal, the installer asks for the install directory
+        run: |
+          { printf '~/prompted-install\n'; sleep 2; printf '1.2.3.4\n'; sleep 5; } |
+            script -qec 'env -u PERETYN_DIR -u PERETYN_DOMAIN PERETYN_TAG=unused sh deploy/install.sh' /dev/null >prompted.log || true
+          grep -q 'Install directory \[/opt/peretyn\]' prompted.log
+          test -d "$HOME/prompted-install"
+
       - name: Install unattended
         run: |
           set -o pipefail
