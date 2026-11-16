@@ -197,6 +197,27 @@ download_deploy_files() {
   done
 }
 
+expand_home() {
+  case "$1" in
+  \~) printf '%s' "$HOME" ;;
+  \~/*) printf '%s/%s' "$HOME" "${1#\~/}" ;;
+  *) printf '%s' "$1" ;;
+  esac
+}
+
+choose_install_dir() {
+  if [ -n "${PERETYN_DIR+set}" ]; then
+    PERETYN_DIR=$(expand_home "${PERETYN_DIR:-$DEFAULT_DIR}")
+    return
+  fi
+  PERETYN_DIR="$DEFAULT_DIR"
+  [ ! -f "$DEFAULT_DIR/.env" ] || return 0
+  has_terminal || return 0
+  printf 'Install directory [%s]: ' "$DEFAULT_DIR" >/dev/tty
+  read -r answer </dev/tty
+  PERETYN_DIR=$(expand_home "${answer:-$DEFAULT_DIR}")
+}
+
 enter_install_dir() {
   mkdir -p "$PERETYN_DIR" 2>/dev/null || fail "cannot create $PERETYN_DIR. Run as root or set PERETYN_DIR to a directory you own."
   cd "$PERETYN_DIR"
@@ -311,9 +332,9 @@ upgrade() {
 }
 
 main() {
-  PERETYN_DIR="${PERETYN_DIR:-$DEFAULT_DIR}"
   check_prerequisites
   resolve_version
+  choose_install_dir
   enter_install_dir
   if [ -f .env ]; then
     upgrade

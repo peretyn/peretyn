@@ -17,14 +17,18 @@ Run the installer as root:
 curl -fsSL https://peretyn.dev/install | sh
 ```
 
-It asks for your domain and the first admin's email, then:
+It asks for the install directory, your domain and the first admin's email, then:
 
-- pins the latest `@peretyn/runtime` release and downloads `compose.yaml` and the `Caddyfile` from that release into `/opt/peretyn`,
+- pins the latest `@peretyn/runtime` release and downloads `compose.yaml` and the `Caddyfile` from that release into the install directory,
 - generates every secret into `.env`, readable only by its owner,
 - starts the stack,
 - creates the admin account and prints its password once.
 
-To install somewhere else, or as a user in the `docker` group, set `PERETYN_DIR` to a directory you own.
+The install directory defaults to `/opt/peretyn`, which needs root. As a user in the `docker` group, answer with a directory you own, such as `~/peretyn`. Run the same command again to upgrade: it finds the existing install in `/opt/peretyn` without asking. For any other directory, set `PERETYN_DIR` on the `sh` side of the pipe:
+
+```sh
+curl -fsSL https://peretyn.dev/install | PERETYN_DIR=~/peretyn sh
+```
 
 ### Unattended install
 
@@ -36,6 +40,7 @@ curl -fsSL https://peretyn.dev/install | \
   PERETYN_ADMIN_EMAIL=you@example.com \
   PERETYN_ADMIN_NAME='Your Name' \
   PERETYN_RESEND_API_KEY= \
+  PERETYN_DIR=/opt/peretyn \
   sh
 ```
 
@@ -46,7 +51,7 @@ curl -fsSL https://peretyn.dev/install | \
 | `PERETYN_ADMIN_NAME`     | The first admin's name. Set it empty to use the email's local part.    |
 | `PERETYN_RESEND_API_KEY` | A [Resend](https://resend.com) API key. Set it empty to send no email. |
 | `PERETYN_TAG`            | The version to install. Defaults to the latest release.                |
-| `PERETYN_DIR`            | The install directory. Defaults to `/opt/peretyn`.                     |
+| `PERETYN_DIR`            | The install directory. Set it empty to use `/opt/peretyn`.             |
 
 ### Try it on this machine
 
@@ -58,6 +63,7 @@ curl -fsSL https://peretyn.dev/install | \
   PERETYN_ADMIN_EMAIL=you@example.com \
   PERETYN_ADMIN_NAME= \
   PERETYN_RESEND_API_KEY= \
+  PERETYN_DIR=~/peretyn \
   sh
 ```
 
