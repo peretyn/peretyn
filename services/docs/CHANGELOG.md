@@ -1,5 +1,11 @@
 # @peretyn/docs
 
+## 0.6.2
+
+### Patch Changes
+
+- 4ed4ee3: The quickstart has a self-hosted version, and a managed version that stays hidden until managed Peretyn opens. Self-hosting documents which flows need email.
+
 ## 0.6.1
 
 ### Patch Changes
