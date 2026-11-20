@@ -3,11 +3,21 @@ title: 3. Folders
 description: Put documents in folders, let access flow down from a folder to everything inside it, and move documents without leaving stale access behind.
 ---
 
+<Callout title="Before you start">
+  This chapter continues the story from chapters 1 and 2. If you landed here first, start with the
+  [Tutorial intro](/tutorial). You need the schema published as `tutorial-v2` and the tuples from
+  the earlier chapters: to catch up, follow the **Run it** section of each earlier chapter.
+</Callout>
+
 Two months in, Acme's corner of your drive has started to look like a teenager's bedroom floor. Alice alone has dozens of documents lying around: specs, plans, meeting notes, three versions of the roadmap. One afternoon, Alice writes in with the request you knew was coming: could Acme have folders?
 
 You read between the lines, and it isn't really about tidiness. Alice wants to create a Product folder, share it with the engineering team once, and have everything inside it follow along. Folders aren't just boxes. They're a way to share a lot of things at once.
 
 ## A folder for the product team
+
+<Callout>
+  Give documents a `parent` folder, and let access flow down with `via('parent', 'can_view')`.
+</Callout>
 
 You know how to share a document with a team, so the plan forms almost on its own: whenever a document lands in the Product folder, copy the folder's shares onto it.
 
@@ -52,7 +62,7 @@ can_view: any('viewer', 'can_edit', via('parent', 'can_view')),
 
 Alice creates the Product folder, shares it with the engineering team, and moves the roadmap into it. Frank, an engineer, has never had anything to do with the roadmap until today:
 
-<include>../../../snippets/tutorial/03-folders/folder.ts</include>
+<include meta='title="folder.ts"'>../../../snippets/tutorial/03-folders/folder.ts</include>
 
 Notice the direction of the `parent` tuple: the folder is the subject and the document is the object. Read it as "`folder:product` is the parent of `document:roadmap`".
 
@@ -66,6 +76,8 @@ frank can_edit document:roadmap: denied
 Frank gets in through the folder. And because the folder only hands down `can_view`, that's all Frank can do with the roadmap.
 
 ## Folders inside folders
+
+<Callout>Give folders a `parent` too. `via` follows parents as deep as they go.</Callout>
 
 A week later, the Product folder has grown clutter of its own, so Alice creates a Q3 folder inside it for the launch planning. The first thing to go in there is the launch plan.
 
@@ -82,7 +94,7 @@ There's something quietly satisfying about this change. It's the same `via` you 
 
 Alice puts the Q3 folder inside Product and the launch plan inside Q3:
 
-<include>../../../snippets/tutorial/03-folders/nested.ts</include>
+<include meta='title="nested.ts"'>../../../snippets/tutorial/03-folders/nested.ts</include>
 
 The script prints:
 
@@ -93,13 +105,29 @@ frank can_view document:launch-plan: allowed
 
 Nobody shared Q3 or the launch plan with Frank. But Frank is on the engineering team, the engineering team can view Product, Product is the parent of Q3, and Q3 is the parent of the launch plan. Peretyn walks that chain from the bottom up.
 
+## Frank's home page
+
+<Callout>List everything a user can see with `lookupResources`.</Callout>
+
+With folders in place, Frank's home page needs a list: every document Frank can open, wherever it lives. Your first thought is to load every document in the drive and run a check on each one. It would work for Acme today, and it would crawl the day Acme has ten thousand documents.
+
+So you turn the question around. Instead of asking "can Frank view this document?" again and again, you ask Peretyn once: which documents can Frank view?
+
+<include meta='title="home.ts"'>../../../snippets/tutorial/03-folders/home.ts</include>
+
+The script prints `frank can view: launch-plan, roadmap`. Peretyn followed the same chains as before, through the engineering team and both folders, and handed back the ids. The order of the ids isn't guaranteed, so the script sorts them.
+
 ## The launch plan moves
+
+<Callout>
+  Moving a document means deleting its old `parent` tuple and writing the new one, in one call.
+</Callout>
 
 Then comes a twist. The launch plan turns out to contain the launch date, and leadership wants to keep it under wraps until the announcement. Alice creates a private Leadership folder and moves the launch plan into it.
 
 In the copying version, this is exactly where stale access would have bitten you: the engineering team's copied tuples would still be sitting on the launch plan, long after it left Product. Here, moving a document means changing a single tuple, its parent. You delete the old one and write the new one in the same call:
 
-<include>../../../snippets/tutorial/03-folders/move.ts</include>
+<include meta='title="move.ts"'>../../../snippets/tutorial/03-folders/move.ts</include>
 
 The script prints:
 
@@ -110,6 +138,8 @@ alice can_view document:launch-plan: allowed
 
 Frank loses the launch plan the moment it moves, without anyone having to think about Frank at all. Alice still sees it, because Alice owns the document.
 
+There's one thing Peretyn won't do for you here. It doesn't know that a document should have only one parent, and it doesn't stop a folder from ending up inside itself. Forget the delete, and the launch plan has two parents, and keeps everything the old one gave it. So your app always moves a document with a delete and a write in the same call, as the script does, and refuses to put a folder inside one of its own subfolders.
+
 ## What you built
 
 Folders turned out to be less about boxes and more about one idea: a <Term name="permission">permission</Term> can follow a relation to another object and ask the question there. `via` did for folders what `team#member` did for teams last month. Access is described once, in the place where it belongs, and everything below it follows along.
@@ -118,17 +148,20 @@ The habit held up, too. The folders and each document's place in them were new <
 
 ## Run it
 
-Now it's your turn at the keyboard. Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+Now it's your turn at the keyboard. Replace your `schema.ts` and `helpers.ts` with the files as they stand at the end of this chapter:
 
-<include>../../../snippets/tutorial/03-folders/schema.ts</include>
+<include meta='title="schema.ts"'>../../../snippets/tutorial/03-folders/schema.ts</include>
 
-Publish the schema, then run the scripts in order:
+<include meta='title="helpers.ts"'>../../../snippets/tutorial/03-folders/helpers.ts</include>
+
+Save each step's script under the name in its title. Then publish the schema, and run the scripts in order:
 
 ```sh
 peretyn build --schema schema.ts
-peretyn apply --label v3
+peretyn apply --label tutorial-v3
 node folder.ts
 node nested.ts
+node home.ts
 node move.ts
 ```
 

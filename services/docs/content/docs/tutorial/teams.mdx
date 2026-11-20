@@ -3,11 +3,19 @@ title: 2. Teams
 description: Share a document with a whole team, put teams inside teams, and keep access right as people join and leave.
 ---
 
+<Callout title="Before you start">
+  This chapter continues the story from chapter 1. If you landed here first, start with the
+  [Tutorial intro](/tutorial). You need the schema published as `tutorial-v1` and the tuples from
+  the earlier chapters: to catch up, follow the **Run it** section of each earlier chapter.
+</Callout>
+
 Monday morning. You've barely sat down when the first message of the week pops up, and it's from Alice. Word about the roadmap has spread over the weekend, and now the whole design team wants to read it. Could you make it possible to share a document with a team, instead of one person at a time?
 
 You read the message twice. Last week, sharing meant one person. This week, it means a group of people, and groups have a habit of changing.
 
 ## Share with the design team
+
+<Callout>Make `team` a type, and share with every member at once through `team#member`.</Callout>
 
 Right now, the design team is just Carol. You already know how to share a document with one person, so the first idea that comes to mind is to share it with each member of the team, one by one:
 
@@ -47,7 +55,7 @@ You notice that you haven't touched `editor`, and you leave it that way. Nobody 
 
 You save Carol as a member of the design team, and Alice shares the roadmap with it. You run the checks, and while you're at it, you make sure last week's work is still standing:
 
-<include>../../../snippets/tutorial/02-teams/share-team.ts</include>
+<include meta='title="share-team.ts"'>../../../snippets/tutorial/02-teams/share-team.ts</include>
 
 The script prints:
 
@@ -61,15 +69,19 @@ Carol can view the roadmap, because Carol is on the design team. Carol can't edi
 
 ## Erin joins
 
+<Callout>A new team member is one tuple. The schema and the documents don't change.</Callout>
+
 On Wednesday, Erin starts on the design team. This is the moment you were dreading when you pictured the one-tuple-per-person version: a search through every shared document, and a pile of new tuples.
 
 Instead, it's one tuple, saved on the team:
 
-<include>../../../snippets/tutorial/02-teams/join.ts</include>
+<include meta='title="join.ts"'>../../../snippets/tutorial/02-teams/join.ts</include>
 
 The script prints `erin can_view document:roadmap: allowed`. You didn't change the schema, and you didn't go anywhere near the roadmap. Erin can now see every document shared with the design team, including the ones shared long before Erin ever walked through the door.
 
 ## Design grows a brand team
+
+<Callout>Let a team's members include another team's members, with `team#member` again.</Callout>
 
 By the end of the month, the design team has grown so much that Acme carves a smaller brand team out of it. The brand team will get documents of its own. But the people on it are still designers, so they need to see everything the design team sees, too.
 
@@ -85,7 +97,7 @@ team: type({
 
 It's the same `team#member` you used for the roadmap, only now a team can hold it as one of its members. Dan joins the brand team, and the brand team joins the design team:
 
-<include>../../../snippets/tutorial/02-teams/brand.ts</include>
+<include meta='title="brand.ts"'>../../../snippets/tutorial/02-teams/brand.ts</include>
 
 The script prints `dan can_view document:roadmap: allowed`.
 
@@ -93,11 +105,13 @@ For a moment, that surprises you, because nobody ever shared the roadmap with Da
 
 ## Carol leaves
 
+<Callout>Deleting one membership tuple removes access to everything shared with the team.</Callout>
+
 A few weeks later, Carol moves to the marketing team. In the world you almost built, this would be the worst day of all: tracking down every tuple Carol got through design, without touching the ones that were shared with Carol directly.
 
 Here, you delete one tuple, the one that makes Carol a member of the design team:
 
-<include>../../../snippets/tutorial/02-teams/leave.ts</include>
+<include meta='title="leave.ts"'>../../../snippets/tutorial/02-teams/leave.ts</include>
 
 The script prints:
 
@@ -116,15 +130,17 @@ And the habit from last week held up. Each request was either a new <Term name="
 
 ## Run it
 
-Now it's your turn at the keyboard. Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+Now it's your turn at the keyboard. Replace your `schema.ts` and `helpers.ts` with the files as they stand at the end of this chapter:
 
-<include>../../../snippets/tutorial/02-teams/schema.ts</include>
+<include meta='title="schema.ts"'>../../../snippets/tutorial/02-teams/schema.ts</include>
 
-Publish the schema, then run the scripts in order:
+<include meta='title="helpers.ts"'>../../../snippets/tutorial/02-teams/helpers.ts</include>
+
+Save each step's script under the name in its title. Then publish the schema, and run the scripts in order:
 
 ```sh
 peretyn build --schema schema.ts
-peretyn apply --label v2
+peretyn apply --label tutorial-v2
 node share-team.ts
 node join.ts
 node brand.ts
