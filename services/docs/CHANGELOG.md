@@ -1,5 +1,15 @@
 # @peretyn/docs
 
+## 0.8.0
+
+### Minor Changes
+
+- 0f94e18: A new Tutorial section tells the story of a shared drive over six chapters: owners and sharing, teams, folders, public links, the company and exceptions. Key terms show their definition on hover, and the Concepts table links each schema function to the chapter that teaches it.
+
+### Patch Changes
+
+- e82b2df: The self-hosting page lists every installer question with its default, the prerequisites the installer checks, the leftover-database stop, and the sender address the installer sets.
+
 ## 0.7.3
 
 ### Patch Changes
