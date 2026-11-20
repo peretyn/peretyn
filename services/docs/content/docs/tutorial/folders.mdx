@@ -1,0 +1,143 @@
+---
+title: 3. Folders
+description: Put documents in folders, let access flow down from a folder to everything inside it, and move documents without leaving stale access behind.
+---
+
+Two months in, Acme's corner of your drive has started to look like a teenager's bedroom floor. Alice alone has dozens of documents lying around: specs, plans, meeting notes, three versions of the roadmap. One afternoon, Alice writes in with the request you knew was coming: could Acme have folders?
+
+You read between the lines, and it isn't really about tidiness. Alice wants to create a Product folder, share it with the engineering team once, and have everything inside it follow along. Folders aren't just boxes. They're a way to share a lot of things at once.
+
+## A folder for the product team
+
+You know how to share a document with a team, so the plan forms almost on its own: whenever a document lands in the Product folder, copy the folder's shares onto it.
+
+```ts
+async function moveIntoFolder(documentId: string, folder: Folder) {
+  await authz.write({
+    writes: folder.sharedWithTeams.map((teamId) => ({
+      subject: { type: 'team', id: teamId, relation: 'member' },
+      relation: 'viewer',
+      object: { type: 'document', id: documentId },
+    })),
+  });
+}
+```
+
+Then you run the scenarios in your head, and each one goes wrong in its own way. Alice shares the folder with one more team, and the documents already inside never hear about it. A document moves out of the folder, and its copied tuples stay behind, quietly giving access to people who should have lost it. And just like the teams last month, a copied <Term name="tuple">tuple</Term> can't tell you where it came from.
+
+You've been here before. Last month, the fix was to stop copying people onto documents and to give the team its own place in the <Term name="schema">schema</Term>. Today's fix is the same idea, one level up: stop copying the folder's access onto its documents, and let each document point at its folder instead.
+
+A folder is a new type. It has an owner and viewers, just like a document, and a team can be a viewer:
+
+```ts
+folder: type({
+  relations: { owner: ['user'], viewer: ['user', 'team#member'] },
+  permissions: { can_view: any('owner', 'viewer') },
+}),
+```
+
+Then the document learns where it lives. It gets a `parent` <Term name="relation">relation</Term>, which points at a folder:
+
+```ts
+parent: ['folder'],
+```
+
+And its `can_view` gets one more way in:
+
+```ts
+can_view: any('viewer', 'can_edit', via('parent', 'can_view')),
+```
+
+`via('parent', 'can_view')` reads almost like a sentence: go to the document's parent, and ask whether this user can view _that_. If the answer is yes for the folder, it's yes for the document. The folder's access flows down, but nothing gets copied. The document only remembers one thing: which folder it's in.
+
+Alice creates the Product folder, shares it with the engineering team, and moves the roadmap into it. Frank, an engineer, has never had anything to do with the roadmap until today:
+
+<include>../../../snippets/tutorial/03-folders/folder.ts</include>
+
+Notice the direction of the `parent` tuple: the folder is the subject and the document is the object. Read it as "`folder:product` is the parent of `document:roadmap`".
+
+The script prints:
+
+```txt
+frank can_view document:roadmap: allowed
+frank can_edit document:roadmap: denied
+```
+
+Frank gets in through the folder. And because the folder only hands down `can_view`, that's all Frank can do with the roadmap.
+
+## Folders inside folders
+
+A week later, the Product folder has grown clutter of its own, so Alice creates a Q3 folder inside it for the launch planning. The first thing to go in there is the launch plan.
+
+You don't need to ask what Alice expects: anyone who can see Product should see Q3, and everything in it. So a folder needs a parent too, and it needs to pass the question up the same way documents do:
+
+```ts
+folder: type({
+  relations: { owner: ['user'], viewer: ['user', 'team#member'], parent: ['folder'] },
+  permissions: { can_view: any('owner', 'viewer', via('parent', 'can_view')) },
+}),
+```
+
+There's something quietly satisfying about this change. It's the same `via` you wrote for documents, and it doesn't care how deep the folders go. Ask about a document three folders down, and Peretyn climbs one parent at a time until it finds an answer or runs out of folders. It's the `while` loop at the bottom of `canViewDocument` from your first week, except that you never have to write it.
+
+Alice puts the Q3 folder inside Product and the launch plan inside Q3:
+
+<include>../../../snippets/tutorial/03-folders/nested.ts</include>
+
+The script prints:
+
+```txt
+frank can_view folder:q3: allowed
+frank can_view document:launch-plan: allowed
+```
+
+Nobody shared Q3 or the launch plan with Frank. But Frank is on the engineering team, the engineering team can view Product, Product is the parent of Q3, and Q3 is the parent of the launch plan. Peretyn walks that chain from the bottom up.
+
+## The launch plan moves
+
+Then comes a twist. The launch plan turns out to contain the launch date, and leadership wants to keep it under wraps until the announcement. Alice creates a private Leadership folder and moves the launch plan into it.
+
+In the copying version, this is exactly where stale access would have bitten you: the engineering team's copied tuples would still be sitting on the launch plan, long after it left Product. Here, moving a document means changing a single tuple, its parent. You delete the old one and write the new one in the same call:
+
+<include>../../../snippets/tutorial/03-folders/move.ts</include>
+
+The script prints:
+
+```txt
+frank can_view document:launch-plan: denied
+alice can_view document:launch-plan: allowed
+```
+
+Frank loses the launch plan the moment it moves, without anyone having to think about Frank at all. Alice still sees it, because Alice owns the document.
+
+## What you built
+
+Folders turned out to be less about boxes and more about one idea: a <Term name="permission">permission</Term> can follow a relation to another object and ask the question there. `via` did for folders what `team#member` did for teams last month. Access is described once, in the place where it belongs, and everything below it follows along.
+
+The habit held up, too. The folders and each document's place in them were new <Term name="fact">facts</Term>. "Whoever can view a folder can view what's inside it" was the only new <Term name="rule">rule</Term>, and you wrote it twice in exactly the same shape: once for documents, once for folders.
+
+## Run it
+
+Now it's your turn at the keyboard. Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+
+<include>../../../snippets/tutorial/03-folders/schema.ts</include>
+
+Publish the schema, then run the scripts in order:
+
+```sh
+peretyn build --schema schema.ts
+peretyn apply --label v3
+node folder.ts
+node nested.ts
+node move.ts
+```
+
+Each script prints the output shown in its step.
+
+## Next
+
+<Cards>
+  <Card title="4. Public links" href="/tutorial/public-links">
+    Launch day at Acme, and the whole world is invited to read.
+  </Card>
+</Cards>

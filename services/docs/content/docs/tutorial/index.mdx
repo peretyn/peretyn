@@ -3,13 +3,13 @@ title: Tutorial
 description: Build the authorization of a shared drive, one requirement at a time.
 ---
 
-In this tutorial, you're building a shared drive for companies. People upload documents, share them with colleagues, sort them into folders and send out public links. Under the hood, every one of those features comes down to the same question: is this person allowed to do this?
+You've spent months building it, and next week it finally goes live: a shared drive for companies. People will upload documents, share them with colleagues, sort them into folders and send out public links. It all works on your machine. What you haven't quite figured out yet is the question hiding underneath every one of those features: is this person allowed to do this?
 
-You'll answer that question with Peretyn, one request at a time. Each chapter opens with something your users ask for. You try the obvious solution first, see where it starts to crack, and then grow the <Term name="schema">schema</Term> until it handles the request properly. By the last chapter, you'll have used every building block a schema has to offer.
+That question is about to follow you through the weeks ahead. Each chapter of this tutorial is a stretch of that story. Your users come to you with a request, you try the obvious solution first, and you watch it start to crack. Then you reach for Peretyn and grow your <Term name="schema">schema</Term> just enough to handle the request properly. By the last chapter, you'll have used every building block a schema has to offer, and you'll know exactly when to reach for each one.
 
 ## Before you start
 
-Finish the [Quickstart](/quickstart) first. You need its environment variables, the CLI and the SDK.
+Before launch day, you need a few things in place. Finish the [Quickstart](/quickstart) first, so you have its environment variables, the CLI and the SDK.
 
 Then set up a fresh directory for the drive, just like you did in the quickstart:
 
@@ -24,27 +24,39 @@ npm pkg set type=module
 npm install @peretyn/sdk
 ```
 
-Stick with the same `development` key for the whole tutorial. Each chapter picks up the tuples that the earlier chapters left behind, so it's best to follow them in order.
+Stick with the same `development` key for the whole tutorial. Each chapter picks up the tuples that the earlier chapters left behind, so the story only makes sense if you follow it in order.
 
 ## How each chapter works
 
-Each chapter tells a story, one step at a time. In every step, your users come to you with a new request, and you change the schema only as much as that request needs. Each step also comes with a small script that saves the new <Term name="tuple">tuples</Term> and runs the new <Term name="check">checks</Term>, so you can watch the answers change.
+Each chapter tells its story one step at a time. In every step, a new request lands on your desk, and you change the schema only as much as that request needs, never more. Each step comes with a small script that saves the new <Term name="tuple">tuples</Term> and runs the new <Term name="check">checks</Term>, so you can watch the answers change as the story moves along.
 
-The last section of every chapter, **Run it**, gathers everything you need to try it yourself:
+When the chapter is over, its last section, **Run it**, hands you the keyboard:
 
 1. The full `schema.ts` as it stands at the end of the chapter. Replace your file with it.
 2. The commands that publish it. Each chapter uses the next label: `v1` in the first chapter, `v2` in the second, and so on.
 3. The step scripts, which you run in order with `node`. Each one prints the output shown in its step.
 
-The schema only ever grows. Later chapters add types and relations, but they never remove or rename one, so the tuples you saved earlier keep working.
+Your schema only ever grows. Later chapters add types and relations, but they never remove or rename one, so the tuples you saved along the way keep working.
 
 ## Chapters
 
 <Cards>
   <Card title="1. Owners and sharing" href="/tutorial/owners">
-    Let people own documents and share them with others.
+    Launch week. Your first customer uploads a document, and then wants to share it.
   </Card>
   <Card title="2. Teams" href="/tutorial/teams">
-    Share with a whole team, and put teams inside teams.
+    The design team wants in, and teams have a habit of changing.
+  </Card>
+  <Card title="3. Folders" href="/tutorial/folders">
+    Share a folder once, and let everything inside it follow along.
+  </Card>
+  <Card title="4. Public links" href="/tutorial/public-links">
+    Launch day at Acme, and the whole world is invited to read.
+  </Card>
+  <Card title="5. The company" href="/tutorial/company">
+    A second customer signs up, and Acme's IT admin needs to see everything.
+  </Card>
+  <Card title="6. Exceptions" href="/tutorial/exceptions">
+    One document one person must never see, and guests who can edit but never share.
   </Card>
 </Cards>
