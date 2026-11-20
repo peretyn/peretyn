@@ -5,13 +5,13 @@ description: Run the Peretyn stack on your own server with Docker Compose.
 
 The Compose stack runs Peretyn on one host: the runtime, the control plane, the dashboard, PostgreSQL, and Caddy in front of them. Caddy gets a TLS certificate for your domain, and it is the only service that publishes ports. To see what the stack doesn't do yet, such as running on more than one host, read [Limits and guarantees](/limits).
 
-You need a Linux host with Docker and Docker Compose v2, `curl` and `openssl`, a domain whose DNS record points at the host, and ports 80 and 443 open. The user that runs the installer must be able to run `docker`: either root, or a member of the `docker` group. To try Peretyn without a domain, see [Try it on this machine](#try-it-on-this-machine).
+You need a Linux host with Docker and Docker Compose v2, `curl` and `openssl`, a domain whose DNS record points at the host, and ports 80 and 443 open. The user that runs the installer must be able to run `docker`. Root isn't required: a member of the `docker` group works. To try Peretyn without a domain, see [Try it on this machine](#try-it-on-this-machine).
 
 The domain must be a public name. The installer refuses an IP address, because no client can verify a TLS certificate for one. It warns about names under suffixes reserved for private networks, such as `.test`, `.local`, `.internal` and `.lan`, because they can't get a public certificate.
 
 ## Install
 
-Run the installer as root:
+Run the installer as any user that can run `docker`:
 
 ```sh
 curl -fsSL https://peretyn.dev/install | sh
@@ -19,13 +19,13 @@ curl -fsSL https://peretyn.dev/install | sh
 
 It asks these questions, in this order. Press Enter to keep a default:
 
-| Question          | Default        |
-| ----------------- | -------------- |
-| Install directory | `/opt/peretyn` |
-| Domain            | `localhost`    |
-| Admin email       | none, required |
-| Admin name        | optional       |
-| Resend API key    | optional       |
+| Question          | Default                                |
+| ----------------- | -------------------------------------- |
+| Install directory | `~/peretyn`, or `/opt/peretyn` as root |
+| Domain            | `localhost`                            |
+| Admin email       | none, required                         |
+| Admin name        | optional                               |
+| Resend API key    | optional                               |
 
 It shows a summary of your answers and asks you to confirm, then:
 
@@ -38,7 +38,7 @@ Your answers are saved in `.env` in the install directory. To change one later, 
 
 If a database volume from an earlier install still exists, the installer stops before asking anything, because a new install can't open that data with new secrets. Its message explains how to keep the data or delete it. See [Uninstall](#uninstall).
 
-The install directory defaults to `/opt/peretyn`, which needs root. As a user in the `docker` group, answer with a directory you own, such as `~/peretyn`. Run the same command again to upgrade: it finds the existing install in `/opt/peretyn` without asking, and says which version it upgrades from and to. When you already have the latest version, it does nothing. For any other directory, answer the directory question with it again, or set `PERETYN_DIR` on the `sh` side of the pipe:
+The install directory defaults to `~/peretyn`, or to `/opt/peretyn` when you run the installer as root. Run the same command again to upgrade: it finds an existing install in either directory without asking, and says which version it upgrades from and to. When you already have the latest version, it does nothing. For any other directory, answer the directory question with it again, or set `PERETYN_DIR` on the `sh` side of the pipe:
 
 ```sh
 curl -fsSL https://peretyn.dev/install | PERETYN_DIR=~/peretyn sh
@@ -54,7 +54,7 @@ curl -fsSL https://peretyn.dev/install | \
   PERETYN_ADMIN_EMAIL=you@example.com \
   PERETYN_ADMIN_NAME='Your Name' \
   PERETYN_RESEND_API_KEY= \
-  PERETYN_DIR=/opt/peretyn \
+  PERETYN_DIR=~/peretyn \
   sh
 ```
 
@@ -65,24 +65,12 @@ curl -fsSL https://peretyn.dev/install | \
 | `PERETYN_ADMIN_NAME`     | The first admin's name. Set it empty to use the email's local part.                                  |
 | `PERETYN_RESEND_API_KEY` | A [Resend](https://resend.com) API key. Set it empty to send no email.                               |
 | `PERETYN_TAG`            | The version to install. Defaults to the latest release.                                              |
-| `PERETYN_DIR`            | The install directory. Set it empty to use `/opt/peretyn`.                                           |
+| `PERETYN_DIR`            | The install directory. Set it empty to use the default: `~/peretyn`, or `/opt/peretyn` as root.      |
 | `GITHUB_TOKEN`           | Optional. A GitHub token for the latest-release lookup, needed only when GitHub rate-limits your IP. |
 
 ### Try it on this machine
 
-To evaluate Peretyn on a laptop or a box with no DNS, install it on `localhost`. `localhost` is the default domain, so you can run the plain installer, answer the directory question with a directory you own, such as `~/peretyn`, and press Enter for the domain. Or set every answer up front:
-
-```sh
-curl -fsSL https://peretyn.dev/install | \
-  PERETYN_DOMAIN=localhost \
-  PERETYN_ADMIN_EMAIL=you@example.com \
-  PERETYN_ADMIN_NAME= \
-  PERETYN_RESEND_API_KEY= \
-  PERETYN_DIR=~/peretyn \
-  sh
-```
-
-With `localhost`, Caddy serves plain HTTP at `http://localhost`, so there is no certificate to trust. Open the dashboard at `http://localhost` from the same machine, and use it as the URL in the [Quickstart](/quickstart):
+To evaluate Peretyn on a laptop or a box with no DNS, run the installer as above and keep the default domain, `localhost`. Caddy then serves plain HTTP at `http://localhost`, so there is no certificate to trust. Open the dashboard there from the same machine, and use it as the URL in the [Quickstart](/quickstart):
 
 ```sh
 export PERETYN_URL=http://localhost
@@ -115,7 +103,7 @@ The same works for `control` and `dashboard`.
 #### 1. Download the files
 
 ```sh
-mkdir -p /opt/peretyn && cd /opt/peretyn
+mkdir -p ~/peretyn && cd ~/peretyn
 base=https://raw.githubusercontent.com/peretyn/peretyn/main/deploy
 curl -fsSLO "$base/compose.yaml"
 curl -fsSLO "$base/Caddyfile"
@@ -209,7 +197,7 @@ Compose names everything after the `peretyn` project:
 | `peretyn_postgres-data` | The PostgreSQL database `peretyn`: accounts, organizations, projects, API keys, models, tuples and their change log. |
 | `peretyn_caddy-data`    | Caddy's TLS certificates and their keys.                                                                             |
 | `peretyn_caddy-config`  | Caddy's saved configuration.                                                                                         |
-| The install directory   | `compose.yaml`, the `Caddyfile`, and `.env` with every secret. `/opt/peretyn` by default.                            |
+| The install directory   | `compose.yaml`, the `Caddyfile`, and `.env` with every secret. `~/peretyn` by default, or `/opt/peretyn` as root.    |
 
 The database has two schemas. The control plane owns `peretyn_control`: accounts, sessions, organizations, projects, environments and schema versions. The runtime owns `peretyn_runtime`: the hashes of API keys, and the OpenFGA tables that hold models, tuples and the change log.
 
@@ -217,12 +205,14 @@ The containers keep no other state. Caddy gets a new certificate if `peretyn_cad
 
 ## Back up and restore
 
+Run these commands from your install directory. The examples use `~/peretyn`.
+
 ### Back up
 
 Run `pg_dump` from the install directory. The `-T` flag keeps Docker from attaching a terminal, which would corrupt the dump:
 
 ```sh
-cd /opt/peretyn
+cd ~/peretyn
 docker compose exec -T postgres pg_dump -U peretyn -Fc peretyn > peretyn.dump
 ```
 
@@ -233,7 +223,7 @@ The dump is consistent while the stack runs. Copy it off the host, together with
 Restore into the same `PERETYN_TAG` that made the backup, then [upgrade](#upgrade). The runtime and the control plane hold connections to the database, so stop them first:
 
 ```sh
-cd /opt/peretyn
+cd ~/peretyn
 docker compose stop runtime control dashboard
 docker compose exec -T postgres dropdb -U peretyn peretyn
 docker compose exec -T postgres createdb -U peretyn peretyn
@@ -272,9 +262,9 @@ The volumes stay. `docker compose up -d` starts the stack again with the same da
 To delete everything, including every tuple, account and certificate:
 
 ```sh
-cd /opt/peretyn
+cd ~/peretyn
 docker compose down --volumes --rmi all
-cd / && rm -rf /opt/peretyn
+cd ~ && rm -rf ~/peretyn
 ```
 
 This can't be undone. [Back up](#back-up) first if you might need the data.

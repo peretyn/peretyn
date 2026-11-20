@@ -3,14 +3,24 @@ title: Quickstart
 description: Publish a schema and run your first check on your own Peretyn.
 ---
 
-You need Node.js 24 or later, and a running Peretyn. To start one on your machine, follow [Try it on this machine](/self-hosting#try-it-on-this-machine). Then set its address once, and the steps below use it:
+You need Node.js 24 or later, and Docker with ports 80 and 443 free. A managed Peretyn, with nothing to run yourself, is coming soon.
+
+## Start Peretyn
+
+Run the installer as any user that can run `docker`:
+
+```sh
+curl -fsSL https://peretyn.dev/install | sh
+```
+
+The only answer you type is your email, for the admin account. Press Enter at every other question: it keeps the default install directory and the `localhost` domain, skips the optional name and email key, and confirms the install. When the installer finishes, it prints the admin password once. Copy it: you sign in with your email and this password in step 1.
+
+Peretyn now runs at `http://localhost`. Set that address once, and the steps below use it:
 
 ```sh
 export PERETYN_URL=http://localhost
 ```
 
-If Peretyn runs on a server, use its domain instead, such as `https://peretyn.example.com`.
-
-A managed Peretyn, with nothing to run yourself, is coming soon.
+This install serves plain HTTP, so use it only from this machine. To run Peretyn on a server with your own domain, see [Self-hosting](/self-hosting), and use your domain as `PERETYN_URL`, such as `https://peretyn.example.com`.
 
 <include>../../../snippets/quickstart/steps.mdx</include>
