@@ -13,7 +13,8 @@
     "start": "next start --port ${PERETYN_DOCS_PORT:-3002}",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "capture": "sh capture/capture.sh"
   },
   "dependencies": {
     "@peretyn/ui": "workspace:*",
