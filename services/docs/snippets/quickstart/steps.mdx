@@ -4,6 +4,8 @@ Open the dashboard at `$PERETYN_URL`. If you have no organization yet, select **
 
 Peretyn creates a `production` and a `development` environment and shows an API key for each. Copy the **Development key**, which starts with `prn_test_`. The dashboard shows each key only once.
 
+![Signing in to the dashboard, creating the Acme organization and a project, then copying the development key](/quickstart/create-project.webp)
+
 The dashboard opens on Production. To see the tuples that this quickstart writes, switch the environment selector to Development.
 
 ## 2. Set your environment
@@ -15,6 +17,8 @@ export PERETYN_TOKEN=prn_test_...
 export PERETYN_RUNTIME_URL=$PERETYN_URL
 export PERETYN_CONTROL_URL=$PERETYN_URL
 ```
+
+![Exporting the three variables in a terminal, then listing them](/quickstart/set-environment.webp)
 
 ## 3. Install the CLI and the SDK
 
@@ -47,12 +51,17 @@ A document has owners and viewers. Anyone who is an owner or a viewer can view i
 
 ## 5. Publish the schema
 
-Compile the schema and publish it to the environment that your API key identifies:
+Compile the schema, preview what changes, then publish it to the environment that your API key identifies:
 
 ```sh
 peretyn build --schema schema.ts
+peretyn plan
 peretyn apply --label v1
 ```
+
+`peretyn plan` prints what `apply` would change, without changing anything. Here, every type is new.
+
+![Building, planning and applying the schema in a terminal, then opening the project's Schema page in the dashboard, where v1 is live in Development](/quickstart/publish-schema.webp)
 
 ## 6. Run a check
 
