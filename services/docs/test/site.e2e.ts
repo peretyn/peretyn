@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, inject, it } from 'vitest';
 
 const INTERNAL_LINK = /href="(\/[^"#?]*)/g;
 const SKIPPED_PREFIXES = ['/_next/', '/api/'];
-const SECTIONS = ['/quickstart', '/concepts', '/sdk', '/cli', '/self-hosting'];
+const SECTIONS = ['/quickstart', '/concepts', '/tutorial', '/sdk', '/cli', '/self-hosting'];
 const DOCS_ORIGIN = 'https://docs.peretyn.dev';
 
 interface CrawledPage {

@@ -1,0 +1,134 @@
+---
+title: 2. Teams
+description: Share a document with a whole team, put teams inside teams, and keep access right as people join and leave.
+---
+
+Monday morning. You've barely sat down when the first message of the week pops up, and it's from Alice. Word about the roadmap has spread over the weekend, and now the whole design team wants to read it. Could you make it possible to share a document with a team, instead of one person at a time?
+
+You read the message twice. Last week, sharing meant one person. This week, it means a group of people, and groups have a habit of changing.
+
+## Share with the design team
+
+Right now, the design team is just Carol. You already know how to share a document with one person, so the first idea that comes to mind is to share it with each member of the team, one by one:
+
+```ts
+await authz.write({
+  writes: designTeam.map((id) => ({
+    subject: { type: 'user', id },
+    relation: 'viewer',
+    object: { type: 'document', id: 'roadmap' },
+  })),
+});
+```
+
+It would work today. Then you play it forward a few weeks, and it starts to come apart in your hands.
+
+Erin joins the design team. Erin should see every document the team can see, so you'd have to dig up every document ever shared with design and save a tuple for Erin on each one. Then Carol moves to another team. Now you'd have to hunt down every tuple Carol got through design and delete it, while carefully keeping the ones Alice shared with Carol directly. And the tuples themselves can't tell you which is which.
+
+You lean back. The real problem isn't the loop. The design team exists at Acme, but it doesn't exist anywhere in your <Term name="schema">schema</Term>, so its members end up smeared across hundreds of tuples, one per person per document.
+
+So you give the team a home. A team is a new type, and it has members:
+
+```ts
+team: type({
+  relations: { member: ['user'] },
+}),
+```
+
+Then you teach documents to accept a team. You add `team#member` to the list of who can be a viewer:
+
+```ts
+viewer: ['user', 'team#member'],
+```
+
+`team#member` reads as "every member of a team". With it, a single <Term name="tuple">tuple</Term> shares the roadmap with the whole team: `team:design#member` is `viewer` on `document:roadmap`. And because Peretyn looks up the team's members at the moment of each check, that tuple stays right no matter who joins or leaves later.
+
+You notice that you haven't touched `editor`, and you leave it that way. Nobody has asked to share editing with a team, and the schema only grows when the story needs it to.
+
+You save Carol as a member of the design team, and Alice shares the roadmap with it. You run the checks, and while you're at it, you make sure last week's work is still standing:
+
+<include>../../../snippets/tutorial/02-teams/share-team.ts</include>
+
+The script prints:
+
+```txt
+carol can_view document:roadmap: allowed
+carol can_edit document:roadmap: denied
+bob can_edit document:roadmap: allowed
+```
+
+Carol can view the roadmap, because Carol is on the design team. Carol can't edit it, because the team was given `viewer`, not `editor`. And Bob is still an editor from last week. You changed the schema, but the old tuples didn't move an inch.
+
+## Erin joins
+
+On Wednesday, Erin starts on the design team. This is the moment you were dreading when you pictured the one-tuple-per-person version: a search through every shared document, and a pile of new tuples.
+
+Instead, it's one tuple, saved on the team:
+
+<include>../../../snippets/tutorial/02-teams/join.ts</include>
+
+The script prints `erin can_view document:roadmap: allowed`. You didn't change the schema, and you didn't go anywhere near the roadmap. Erin can now see every document shared with the design team, including the ones shared long before Erin ever walked through the door.
+
+## Design grows a brand team
+
+By the end of the month, the design team has grown so much that Acme carves a smaller brand team out of it. The brand team will get documents of its own. But the people on it are still designers, so they need to see everything the design team sees, too.
+
+Your first instinct is to add each brand designer to the design team as well. Then you catch yourself, because you've seen this movie before: it's the one-tuple-per-person problem all over again, just one level up.
+
+What you really want is for a team to include all the members of another team. And you already have the words for that:
+
+```ts
+team: type({
+  relations: { member: ['user', 'team#member'] },
+}),
+```
+
+It's the same `team#member` you used for the roadmap, only now a team can hold it as one of its members. Dan joins the brand team, and the brand team joins the design team:
+
+<include>../../../snippets/tutorial/02-teams/brand.ts</include>
+
+The script prints `dan can_view document:roadmap: allowed`.
+
+For a moment, that surprises you, because nobody ever shared the roadmap with Dan, or even with the brand team. Then you trace it: Dan is on the brand team, the brand team is part of the design team, and the design team can view the roadmap. Peretyn followed that chain on its own, and it would follow it just as happily if Acme nested another team inside brand next year.
+
+## Carol leaves
+
+A few weeks later, Carol moves to the marketing team. In the world you almost built, this would be the worst day of all: tracking down every tuple Carol got through design, without touching the ones that were shared with Carol directly.
+
+Here, you delete one tuple, the one that makes Carol a member of the design team:
+
+<include>../../../snippets/tutorial/02-teams/leave.ts</include>
+
+The script prints:
+
+```txt
+carol can_view document:roadmap: denied
+erin can_view document:roadmap: allowed
+```
+
+With a single delete, Carol loses access to the roadmap and to every other document shared with the design team. Erin is still on the team, so Erin keeps access, and nobody had to think about it.
+
+## What you built
+
+You look back at the month. The design team grew, gained a new member, split off a brand team and lost Carol to marketing, and after that first share, you never touched the roadmap's tuples again. The schema learned one new type and one new idea: a relation can point at every member of a team, not just at one person.
+
+And the habit from last week held up. Each request was either a new <Term name="fact">fact</Term>, like Erin joining, or a new <Term name="rule">rule</Term>, like teams inside teams, and you changed only that.
+
+## Run it
+
+Now it's your turn at the keyboard. Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+
+<include>../../../snippets/tutorial/02-teams/schema.ts</include>
+
+Publish the schema, then run the scripts in order:
+
+```sh
+peretyn build --schema schema.ts
+peretyn apply --label v2
+node share-team.ts
+node join.ts
+node brand.ts
+node leave.ts
+```
+
+Each script prints the output shown in its step.

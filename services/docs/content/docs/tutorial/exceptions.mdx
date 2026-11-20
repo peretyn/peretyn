@@ -1,0 +1,136 @@
+---
+title: 6. Exceptions
+description: Hide one document from one person without breaking a shared folder, require two conditions at once, and see how the schema fixes every bug in the function you never wrote.
+---
+
+Six months in. Your drive has grown, Acme has grown, and the requests have changed their tone. They're no longer about giving people access. They're about the exceptions: the one person who must not see one particular thing, and the people who should be able to do almost everything, but not quite.
+
+## One document Frank must not see
+
+Alice is preparing the yearly team reviews, and the natural home for them is the Product folder, next to everything else the product team works on. There's just one problem. Frank's own review is in there, and Frank is on the engineering team, which can view the whole folder.
+
+You turn the options over in your head. You could keep the reviews out of the folder, but then everyone else loses them too, and Alice is back to sharing one person at a time. You could stop sharing the folder with the engineering team and share it with each engineer except Frank, but that throws away everything the last few months taught you. Neither is what Alice wants. Alice wants the folder to keep working exactly as it does, with one exception.
+
+An exception is something Peretyn can say directly. First, a document needs a way to record who is blocked from it:
+
+```ts
+blocked: ['user'],
+```
+
+Then the <Term name="permission">permissions</Term> subtract the blocked people from everyone else:
+
+```ts
+can_edit: exclude(any('owner', 'editor'), 'blocked'),
+can_view: exclude(
+  any('viewer', 'can_edit', via('parent', 'can_view'), via('organization', 'admin')),
+  'blocked',
+),
+```
+
+`exclude(a, b)` grants a permission when the user has `a` but not `b`. Every way in goes into `a`, and `blocked` is taken away from all of them at once.
+
+You almost put `exclude` on `can_view` alone. Then you remember the warning from your first week: if blocking only applied to viewing, a blocked editor could still save changes to a document they can't even open. So `blocked` wraps both.
+
+Alice adds the reviews to the Product folder, links them to Acme like every other document, and blocks Frank:
+
+<include>../../../snippets/tutorial/06-exceptions/block.ts</include>
+
+The script prints:
+
+```txt
+frank can_view document:team-reviews: denied
+frank can_view document:roadmap: allowed
+ivan can_view document:team-reviews: allowed
+```
+
+Frank can't open the reviews, but the rest of the folder works for Frank just as it always has. Ivan can still see the reviews through Acme. The block is precise: one person, one document, and nothing else moves.
+
+And here's the part that makes you smile. Because `exclude` wraps every way in at once, a block holds no matter how someone would have gotten in: a direct share, a team, a folder, a company admin role, or a public link. That last one was the first bug in `canViewDocument`, the function you never wrote.
+
+## Guests can edit, but never share
+
+For the launch campaign, Acme hires an outside agency, and Gus, one of its designers, needs to edit the roadmap. Alice makes Gus an editor. An hour later, Acme's security lead raises a flag: guests can work on documents, but they must never be able to share Acme's documents with anyone else.
+
+Until now, your sharing handler let anyone who could edit a document share it. Your first instinct is to bolt on an email check:
+
+```ts
+if (!user.email.endsWith('@acme.com')) {
+  throw new ForbiddenError();
+}
+```
+
+You can see the cracks before you've even saved it. Some contractors get Acme addresses, some Acme people don't, and Globex will want the same rule with their own domain next week. A rule about a company is hiding inside a string comparison.
+
+What security actually asked for is two conditions at the same time: you can edit the document, _and_ you belong to the company it belongs to. Belonging is a new fact, so the organization gets members:
+
+```ts
+organization: type({
+  relations: { admin: ['user'], member: ['user'] },
+}),
+```
+
+And sharing gets its own permission, which demands both conditions:
+
+```ts
+can_share: intersect('can_edit', via('organization', 'member')),
+```
+
+`intersect(a, b)` grants a permission only when the user has both `a` and `b`. Here, that means the user can edit the document and is a member of the document's organization. Your sharing handler switches from asking for `can_edit` to asking for `can_share`, and it never needs to know about guests.
+
+You record that Alice and Bob are members of Acme, and Alice makes Gus an editor of the roadmap:
+
+<include>../../../snippets/tutorial/06-exceptions/guests.ts</include>
+
+The script prints:
+
+```txt
+gus can_edit document:roadmap: allowed
+gus can_share document:roadmap: denied
+bob can_share document:roadmap: allowed
+```
+
+Gus can edit, so the campaign work goes on. Gus can't share, because Gus isn't a member of Acme. Bob can do both, because Bob is an editor and a member. The rule about guests now lives in the schema, where it works the same way for every company you'll ever sign.
+
+## Back to the function you never wrote
+
+Back in launch week, before you'd written a single line of schema, you pictured a function. It was what your drive would have grown into, six months later, if every request had added another branch to an `if`. Six months later is now, so it's time to go back and check its four bugs:
+
+- **Blocked users were checked too late,** so a public link or a direct share slipped past the block. Now `exclude` wraps every way in at once, and there's no order to get wrong.
+- **Teams inside teams only worked one level deep.** Now `team#member` nests as deep as Acme likes, and Peretyn follows every level.
+- **Every check fired a database query for each team and each folder.** Now your handler makes a single call, and the walking happens inside Peretyn, right next to the tuples, instead of as a chain of queries from your app.
+- **`canEditDocument` was a copy that drifted.** Now `can_view` is built on `can_edit`, `can_share` is built on `can_edit`, and every rule lives in one schema. There's no copy left to drift.
+
+Over six chapters, every request was either a new <Term name="fact">fact</Term> or a new <Term name="rule">rule</Term>, and you changed only that. The result is in **Run it** below: every rule your drive needs, in one file that fits on a single screen.
+
+## Run it
+
+Now it's your turn at the keyboard, one last time. Replace your `schema.ts` with the schema as it stands at the end of the tutorial:
+
+<include>../../../snippets/tutorial/06-exceptions/schema.ts</include>
+
+Publish the schema, then run the scripts in order:
+
+```sh
+peretyn build --schema schema.ts
+peretyn apply --label v6
+node block.ts
+node guests.ts
+```
+
+Each script prints the output shown in its step.
+
+## Where to go next
+
+The story ends here, but your drive doesn't. These pages pick up where the tutorial leaves off:
+
+<Cards>
+  <Card title="Checks" href="/sdk/checks">
+    Run checks, assertions and batch checks from your handlers.
+  </Card>
+  <Card title="Tuples" href="/sdk/tuples">
+    Write and delete tuples as your users share and unshare.
+  </Card>
+  <Card title="Concepts" href="/concepts">
+    The words Peretyn uses, all in one place.
+  </Card>
+</Cards>

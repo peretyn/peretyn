@@ -1,0 +1,85 @@
+---
+title: 4. Public links
+description: Make a document readable by anyone with the link, without a public flag or a second source of truth, and take it down again with one delete.
+---
+
+It's launch day, but not yours this time. Acme's new product goes public on Thursday, and Alice has written the announcement in your drive. Alice wants a link that anyone can open: journalists, customers, people who have never heard of Acme. No Acme account, no team, no folder. Just a link.
+
+## Anyone with the link
+
+Your first instinct is a quick flag on the document, checked before Peretyn is even asked:
+
+```ts
+if (document.isPublic) {
+  return;
+}
+await authz.assert({
+  subject: { type: 'user', id: user.id },
+  relation: 'can_view',
+  object: { type: 'document', id: document.id },
+});
+```
+
+It's short, it works, and it's a trap. You've just split the answer to "can this person view this document?" across two places: a column in your database and a schema in Peretyn. Every part of your app that asks the question now has to remember both. The search page, the list of recent documents, the API your customers will want next year: each one is a fresh chance to forget the flag.
+
+And there's worse waiting down the road. One day, Acme will ask you to keep a particular person away from a particular document, and that early `return` will wave them straight through. You've seen that bug before. It was the first one on the list, back in the function you never wrote.
+
+What you want is for "public" to be just another <Term name="fact">fact</Term>, stored in the same place as all the others. So you make "everyone" something a document can be shared with:
+
+```ts
+viewer: ['user', 'team#member', 'user:*'],
+```
+
+`user:*` means every user, whoever they are, including people your drive has never seen before. A <Term name="tuple">tuple</Term> with `user:*` as its subject makes the document public: `user:*` is `viewer` on `document:announcement`. The <Term name="rule">rule</Term> doesn't change at all. `can_view` already says that viewers can view, and now everyone is a viewer.
+
+Alice writes the announcement and publishes it. Zoe, a journalist who has never logged into your drive, opens the link:
+
+<include>../../../snippets/tutorial/04-public-links/publish.ts</include>
+
+In the script, `everyone` is the `user:*` subject. The script prints:
+
+```txt
+zoe can_view document:announcement: allowed
+zoe can_edit document:announcement: denied
+zoe can_view document:roadmap: denied
+```
+
+Zoe can read the announcement, like anyone else on the internet. Zoe can't edit it, because everyone was only made a viewer. And Zoe can't see anything else in Acme's drive: a public document doesn't open the door to anything around it.
+
+## Unpublishing
+
+A week after the launch, the announcement is already out of date, and Alice wants to take it down. With a flag, you'd flip a column and hope that every code path read it. Here, you delete the tuple you wrote:
+
+<include>../../../snippets/tutorial/04-public-links/unpublish.ts</include>
+
+The script prints:
+
+```txt
+zoe can_view document:announcement: denied
+alice can_view document:announcement: allowed
+```
+
+The link stops working for the world, and Alice, as the owner, still has the announcement.
+
+## What you built
+
+A public link turned out to be an ordinary share, with "everyone" as the one you share with. No flag, no special case in your handlers, no second source of truth to keep in sync.
+
+This is the first chapter where you didn't touch a single <Term name="permission">permission</Term>. Publishing and unpublishing were facts, and the rules you already had knew exactly what to do with them.
+
+## Run it
+
+Now it's your turn at the keyboard. Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+
+<include>../../../snippets/tutorial/04-public-links/schema.ts</include>
+
+Publish the schema, then run the scripts in order:
+
+```sh
+peretyn build --schema schema.ts
+peretyn apply --label v4
+node publish.ts
+node unpublish.ts
+```
+
+Each script prints the output shown in its step.
