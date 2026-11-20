@@ -3,6 +3,11 @@ title: 1. Owners and sharing
 description: Let people own documents and share them with others, and check permissions instead of roles.
 ---
 
+<Callout title="Before you start">
+  Set up the project directory, the API key and the CLI as described in the [Tutorial
+  intro](/tutorial).
+</Callout>
+
 It's launch week, and the coffee stopped working days ago. Your drive went live on Monday. Companies can upload their documents and find them again, and on Tuesday morning, Acme signs up as your very first customer. You watch the dashboard as the first user logs in: Alice, a product manager at Acme.
 
 A file lands. The product roadmap. It's still a rough draft, and nobody else is supposed to see it yet.
@@ -10,6 +15,8 @@ A file lands. The product roadmap. It's still a rough draft, and nobody else is 
 You don't know it yet, but this one document is about to teach you most of what there is to know about access control. By Friday, Bob will be reading it, then editing it, and somewhere along the way a simple `if` statement will stop being enough.
 
 ## Alice owns what Alice uploads
+
+<Callout>A private document needs no Peretyn yet: one owner column and one `if`.</Callout>
 
 Alice expects one thing from your drive: nobody else can open the roadmap.
 
@@ -24,6 +31,11 @@ if (document.ownerId !== user.id) {
 One column, one line, and the job is done. You're tempted to build something more flexible, just in case, but you resist. For a private document, this is exactly the right amount of code.
 
 ## Alice shares with Bob
+
+<Callout>
+  Sharing is where `if` statements start to pile up. Peretyn keeps facts (relations, saved as
+  tuples) apart from rules (permissions, written in the schema).
+</Callout>
 
 Two days later, a message drops into your inbox. The roadmap is ready for a second pair of eyes, and Alice wants Bob to read it. Read it, not change it.
 
@@ -113,9 +125,15 @@ Reading it back, you're surprised by how little there is to it:
 
 Then you go back to the handler and delete the id comparisons. In their place, it runs a <Term name="check">check</Term>, a single question to Peretyn: can this user view this document? The handler doesn't know or care why the answer is yes or no, and that's exactly the point. Whenever the rules change, you'll update the schema, and the handler will stay just as it is.
 
-When Alice uploads the roadmap, your app saves a tuple saying Alice is the owner. When Alice shares it, your app saves another saying Bob is a viewer. Then you test it the way you'd test anything: with the person who should get in, the person who was just invited, and someone who shouldn't get in at all. Carol, from the design team, has never been given access:
+When Alice uploads the roadmap, your app saves a tuple saying Alice is the owner. When Alice shares it, your app saves another saying Bob is a viewer. Then you test it the way you'd test anything: with the person who should get in, the person who was just invited, and someone who shouldn't get in at all. Carol, from the design team, has never been given access.
 
-<include>../../../snippets/tutorial/01-owners/share.ts</include>
+Every script in this tutorial starts from the same small file, `helpers.ts`. It creates the client from your API key, gives you short helpers such as `user('alice')`, and prints each verdict on its own line. Later chapters add a helper or two, only when the story needs them:
+
+<include meta='title="helpers.ts"'>../../../snippets/tutorial/01-owners/helpers.ts</include>
+
+With that in place, the script itself is just the tuples and the questions:
+
+<include meta='title="share.ts"'>../../../snippets/tutorial/01-owners/share.ts</include>
 
 The script prints:
 
@@ -128,6 +146,8 @@ carol can_view document:roadmap: denied
 Alice gets in as the owner, and Bob gets in as a viewer. Carol is turned away, because no tuple gives Carol access, and Peretyn never allows anything it wasn't told to allow. You let out a breath you didn't know you were holding.
 
 ## Bob fixes a typo
+
+<Callout>Add an `editor` relation, and build `can_view` on top of `can_edit`.</Callout>
 
 Friday afternoon. You're halfway out the door when Bob's message arrives: there's a typo in the Q3 section. Alice is stuck in meetings all afternoon, so Alice asks Bob to just go ahead and fix it.
 
@@ -160,7 +180,7 @@ A <Term name="permission">permission</Term> can build on another permission. `ca
 
 You make Bob an editor, and run it one last time before the weekend:
 
-<include>../../../snippets/tutorial/01-owners/edit.ts</include>
+<include meta='title="edit.ts"'>../../../snippets/tutorial/01-owners/edit.ts</include>
 
 The script prints:
 
@@ -180,15 +200,17 @@ You've also picked up a habit that will serve you for the rest of this tutorial.
 
 ## Run it
 
-Now it's your turn at the keyboard. Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+Now it's your turn at the keyboard. Replace your `schema.ts` and `helpers.ts` with the files as they stand at the end of this chapter:
 
-<include>../../../snippets/tutorial/01-owners/schema.ts</include>
+<include meta='title="schema.ts"'>../../../snippets/tutorial/01-owners/schema.ts</include>
 
-Publish the schema, then run the scripts in order:
+<include meta='title="helpers.ts"'>../../../snippets/tutorial/01-owners/helpers.ts</include>
+
+Save each step's script under the name in its title. Then publish the schema, and run the scripts in order:
 
 ```sh
 peretyn build --schema schema.ts
-peretyn apply --label v1
+peretyn apply --label tutorial-v1
 node share.ts
 node edit.ts
 ```

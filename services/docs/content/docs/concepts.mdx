@@ -29,7 +29,9 @@ A **tuple** is one stored fact: a **subject** has a **relation** on an **object*
 | `team:design#member` | `viewer` | `folder:specs`     |
 | `folder:specs`       | `parent` | `document:roadmap` |
 
-A subject can be a single thing, such as `user:alice`. It can also be every holder of a relation, such as `team:design#member`. The second row gives every member of the design team the `viewer` relation on the folder.
+A subject can be a single thing, such as `user:alice`. It can also be every holder of a relation, such as `team:design#member`. The second row gives every member of the design team the `viewer` relation on the folder. [Teams](/tutorial/teams) shows when to use one.
+
+A subject can also be a **wildcard**: `user:*` means every user, including users that no tuple names. A `viewer` tuple with `user:*` as its subject makes an object public. The schema must list `user:*` among the subjects that the relation accepts. [Public links](/tutorial/public-links) shows it in use.
 
 ## Relations and permissions
 

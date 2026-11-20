@@ -5,7 +5,7 @@ export const schema = defineSchema({
   team: type({
     relations: { member: ['user', 'team#member'] },
   }),
-  organization: type({
+  company: type({
     relations: { admin: ['user'], member: ['user'] },
   }),
   folder: type({
@@ -24,16 +24,16 @@ export const schema = defineSchema({
       editor: ['user'],
       viewer: ['user', 'team#member', 'user:*'],
       parent: ['folder'],
-      organization: ['organization'],
+      company: ['company'],
       blocked: ['user'],
     },
     permissions: {
       can_edit: exclude(any('owner', 'editor'), 'blocked'),
       can_view: exclude(
-        any('viewer', 'can_edit', via('parent', 'can_view'), via('organization', 'admin')),
+        any('viewer', 'can_edit', via('parent', 'can_view'), via('company', 'admin')),
         'blocked',
       ),
-      can_share: intersect('can_edit', via('organization', 'member')),
+      can_share: intersect('can_edit', via('company', 'member')),
     },
   }),
 });
