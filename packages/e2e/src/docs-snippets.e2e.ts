@@ -110,6 +110,7 @@ const TUTORIAL_CHAPTERS: Record<string, ScriptRun[]> = {
         'frank can_view document:launch-plan: allowed',
       ].join('\n'),
     },
+    { script: 'home.ts', output: 'frank can view: launch-plan, roadmap' },
     {
       script: 'move.ts',
       output: [
@@ -122,15 +123,15 @@ const TUTORIAL_CHAPTERS: Record<string, ScriptRun[]> = {
     {
       script: 'publish.ts',
       output: [
-        'zoe can_view document:announcement: allowed',
-        'zoe can_edit document:announcement: denied',
-        'zoe can_view document:roadmap: denied',
+        'anonymous can_view document:announcement: allowed',
+        'anonymous can_edit document:announcement: denied',
+        'anonymous can_view document:roadmap: denied',
       ].join('\n'),
     },
     {
       script: 'unpublish.ts',
       output: [
-        'zoe can_view document:announcement: denied',
+        'anonymous can_view document:announcement: denied',
         'alice can_view document:announcement: allowed',
       ].join('\n'),
     },

@@ -3,11 +3,22 @@ title: 5. The company
 description: Give a company's admins access to every document the company owns, and keep one company's admins out of another company's documents.
 ---
 
+<Callout title="Before you start">
+  This chapter continues the story from chapters 1 to 4. If you landed here first, start with the
+  [Tutorial intro](/tutorial). You need the schema published as `tutorial-v4` and the tuples from
+  the earlier chapters: to catch up, follow the **Run it** section of each earlier chapter.
+</Callout>
+
 Four months in, your second customer signs up: Globex. You celebrate for about an hour, until a message from Acme lands in your inbox. Ivan, Acme's IT admin, needs to be able to open any Acme document: for audits, for legal requests, for the day someone leaves the company and their work has to be found.
 
-You read the request again and stop at two words: _any Acme document_. Last week, that would have been the same as "any document". Since this morning, it isn't.
+You read the request again and stop at two words: _any Acme document_. Until this morning, that meant the same as "any document". Not anymore.
 
 ## Acme's IT admin
+
+<Callout>
+  Make the company a type, link each document to its company, and grant `can_view` through
+  `via('company', 'admin')`.
+</Callout>
 
 Your first instinct is a role on the user, checked before anything else:
 
@@ -28,7 +39,7 @@ What Acme is asking for isn't "admins can see everything". It's "the admins of a
 So the company becomes a type of its own, with admins:
 
 ```ts
-organization: type({
+company: type({
   relations: { admin: ['user'] },
 }),
 ```
@@ -36,20 +47,20 @@ organization: type({
 Each document learns which company it belongs to, through a new <Term name="relation">relation</Term>:
 
 ```ts
-organization: ['organization'],
+company: ['company'],
 ```
 
 And `can_view` gets one more way in:
 
 ```ts
-can_view: any('viewer', 'can_edit', via('parent', 'can_view'), via('organization', 'admin')),
+can_view: any('viewer', 'can_edit', via('parent', 'can_view'), via('company', 'admin')),
 ```
 
-It's the same `via` you used for folders, pointed somewhere new: follow the document to its organization, and ask whether this user is an admin there.
+It's the same `via` you used for folders, pointed somewhere new: follow the document to its company, and ask whether this user is an admin there.
 
 Every document now needs to know its company. From now on, your app writes that tuple whenever a document is uploaded, right next to the owner. For the documents that already exist, you write it once: the roadmap, the launch plan and the announcement. Then you make Ivan an admin of Acme:
 
-<include>../../../snippets/tutorial/05-company/admin.ts</include>
+<include meta='title="admin.ts"'>../../../snippets/tutorial/05-company/admin.ts</include>
 
 The script prints:
 
@@ -59,13 +70,19 @@ ivan can_view document:launch-plan: allowed
 ivan can_edit document:roadmap: denied
 ```
 
-Ivan can open the roadmap, and even the launch plan, tucked away in the Leadership folder where only Alice could see it. The organization is its own road to the document, and it doesn't care which folder the document sits in. Ivan can't edit anything, though. The rule you wrote was about viewing, and nobody asked for more.
+Ivan can open the roadmap, and even the launch plan, tucked away in the Leadership folder where only Alice could see it. The company is its own road to the document, and it doesn't care which folder the document sits in. Ivan can't edit anything, though. The rule you wrote was about viewing, and nobody asked for more.
+
+Notice, too, that Ivan can open every Acme _document_, but can't browse Acme's folders. Folders don't belong to a company in your schema, because nobody has asked for that yet. When someone does, it's the same two lines on `folder`.
 
 ## The wall between companies
 
+<Callout>An admin of one company gets nothing on another company's documents.</Callout>
+
 Globex has an IT admin too: Hana. Before you sleep tonight, you want to see with your own eyes that the wall between the two companies holds:
 
-<include>../../../snippets/tutorial/05-company/other-company.ts</include>
+<include meta='title="other-company.ts"'>
+  ../../../snippets/tutorial/05-company/other-company.ts
+</include>
 
 The script prints:
 
@@ -74,7 +91,7 @@ hana can_view document:roadmap: denied
 ivan can_view document:roadmap: allowed
 ```
 
-Hana is an admin, but of Globex. The roadmap belongs to Acme, so the road through its organization leads to Acme's admins, and Hana isn't one of them. There's no `companyId` comparison anywhere in your code, and there never will be. The boundary between companies is built into the shape of the schema itself.
+Hana is an admin, but of Globex. The roadmap belongs to Acme, so the road through its company leads to Acme's admins, and Hana isn't one of them. There's no `companyId` comparison anywhere in your code, and there never will be. The boundary between companies is built into the shape of the schema itself.
 
 ## What you built
 
@@ -84,15 +101,17 @@ The habit carried you through again. Ivan's role and each document's company wer
 
 ## Run it
 
-Now it's your turn at the keyboard. Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+Now it's your turn at the keyboard. Replace your `schema.ts` and `helpers.ts` with the files as they stand at the end of this chapter:
 
-<include>../../../snippets/tutorial/05-company/schema.ts</include>
+<include meta='title="schema.ts"'>../../../snippets/tutorial/05-company/schema.ts</include>
 
-Publish the schema, then run the scripts in order:
+<include meta='title="helpers.ts"'>../../../snippets/tutorial/05-company/helpers.ts</include>
+
+Save each step's script under the name in its title. Then publish the schema, and run the scripts in order:
 
 ```sh
 peretyn build --schema schema.ts
-peretyn apply --label v5
+peretyn apply --label tutorial-v5
 node admin.ts
 node other-company.ts
 ```

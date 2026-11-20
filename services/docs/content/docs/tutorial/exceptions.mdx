@@ -3,9 +3,17 @@ title: 6. Exceptions
 description: Hide one document from one person without breaking a shared folder, require two conditions at once, and see how the schema fixes every bug in the function you never wrote.
 ---
 
+<Callout title="Before you start">
+  This chapter continues the story from chapters 1 to 5. If you landed here first, start with the
+  [Tutorial intro](/tutorial). You need the schema published as `tutorial-v5` and the tuples from
+  the earlier chapters: to catch up, follow the **Run it** section of each earlier chapter.
+</Callout>
+
 Six months in. Your drive has grown, Acme has grown, and the requests have changed their tone. They're no longer about giving people access. They're about the exceptions: the one person who must not see one particular thing, and the people who should be able to do almost everything, but not quite.
 
 ## One document Frank must not see
+
+<Callout>Take a `blocked` relation away from every way in, with `exclude`.</Callout>
 
 Alice is preparing the yearly team reviews, and the natural home for them is the Product folder, next to everything else the product team works on. There's just one problem. Frank's own review is in there, and Frank is on the engineering team, which can view the whole folder.
 
@@ -22,7 +30,7 @@ Then the <Term name="permission">permissions</Term> subtract the blocked people 
 ```ts
 can_edit: exclude(any('owner', 'editor'), 'blocked'),
 can_view: exclude(
-  any('viewer', 'can_edit', via('parent', 'can_view'), via('organization', 'admin')),
+  any('viewer', 'can_edit', via('parent', 'can_view'), via('company', 'admin')),
   'blocked',
 ),
 ```
@@ -33,7 +41,7 @@ You almost put `exclude` on `can_view` alone. Then you remember the warning from
 
 Alice adds the reviews to the Product folder, links them to Acme like every other document, and blocks Frank:
 
-<include>../../../snippets/tutorial/06-exceptions/block.ts</include>
+<include meta='title="block.ts"'>../../../snippets/tutorial/06-exceptions/block.ts</include>
 
 The script prints:
 
@@ -45,9 +53,16 @@ ivan can_view document:team-reviews: allowed
 
 Frank can't open the reviews, but the rest of the folder works for Frank just as it always has. Ivan can still see the reviews through Acme. The block is precise: one person, one document, and nothing else moves.
 
+It's also absolute, and that cuts both ways. A block wins over every way in, ownership included: if Alice were ever blocked from the reviews, Alice would lose them too. So your app never offers to block a document's owner.
+
 And here's the part that makes you smile. Because `exclude` wraps every way in at once, a block holds no matter how someone would have gotten in: a direct share, a team, a folder, a company admin role, or a public link. That last one was the first bug in `canViewDocument`, the function you never wrote.
 
 ## Guests can edit, but never share
+
+<Callout>
+  Require two conditions at once with `intersect`: the user can edit, and is a member of the
+  document's company.
+</Callout>
 
 For the launch campaign, Acme hires an outside agency, and Gus, one of its designers, needs to edit the roadmap. Alice makes Gus an editor. An hour later, Acme's security lead raises a flag: guests can work on documents, but they must never be able to share Acme's documents with anyone else.
 
@@ -61,10 +76,10 @@ if (!user.email.endsWith('@acme.com')) {
 
 You can see the cracks before you've even saved it. Some contractors get Acme addresses, some Acme people don't, and Globex will want the same rule with their own domain next week. A rule about a company is hiding inside a string comparison.
 
-What security actually asked for is two conditions at the same time: you can edit the document, _and_ you belong to the company it belongs to. Belonging is a new fact, so the organization gets members:
+What security actually asked for is two conditions at the same time: you can edit the document, _and_ you belong to the company it belongs to. Belonging is a new fact, so the company gets members:
 
 ```ts
-organization: type({
+company: type({
   relations: { admin: ['user'], member: ['user'] },
 }),
 ```
@@ -72,14 +87,16 @@ organization: type({
 And sharing gets its own permission, which demands both conditions:
 
 ```ts
-can_share: intersect('can_edit', via('organization', 'member')),
+can_share: intersect('can_edit', via('company', 'member')),
 ```
 
-`intersect(a, b)` grants a permission only when the user has both `a` and `b`. Here, that means the user can edit the document and is a member of the document's organization. Your sharing handler switches from asking for `can_edit` to asking for `can_share`, and it never needs to know about guests.
+`intersect(a, b)` grants a permission only when the user has both `a` and `b`. Here, that means the user can edit the document and is a member of the document's company. Your sharing handler switches from asking for `can_edit` to asking for `can_share`, and it never needs to know about guests.
+
+Admin and member are separate relations. Ivan is Acme's admin, but that doesn't make Ivan a member: if an admin should also be a member, your app writes both tuples.
 
 You record that Alice and Bob are members of Acme, and Alice makes Gus an editor of the roadmap:
 
-<include>../../../snippets/tutorial/06-exceptions/guests.ts</include>
+<include meta='title="guests.ts"'>../../../snippets/tutorial/06-exceptions/guests.ts</include>
 
 The script prints:
 
@@ -104,15 +121,17 @@ Over six chapters, every request was either a new <Term name="fact">fact</Term> 
 
 ## Run it
 
-Now it's your turn at the keyboard, one last time. Replace your `schema.ts` with the schema as it stands at the end of the tutorial:
+Now it's your turn at the keyboard, one last time. Replace your `schema.ts` and `helpers.ts` with the files as they stand at the end of the tutorial:
 
-<include>../../../snippets/tutorial/06-exceptions/schema.ts</include>
+<include meta='title="schema.ts"'>../../../snippets/tutorial/06-exceptions/schema.ts</include>
 
-Publish the schema, then run the scripts in order:
+<include meta='title="helpers.ts"'>../../../snippets/tutorial/06-exceptions/helpers.ts</include>
+
+Save each step's script under the name in its title. Then publish the schema, and run the scripts in order:
 
 ```sh
 peretyn build --schema schema.ts
-peretyn apply --label v6
+peretyn apply --label tutorial-v6
 node block.ts
 node guests.ts
 ```

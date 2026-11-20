@@ -28,12 +28,12 @@ Stick with the same `development` key for the whole tutorial. Each chapter picks
 
 ## How each chapter works
 
-Each chapter tells its story one step at a time. In every step, a new request lands on your desk, and you change the schema only as much as that request needs, never more. Each step comes with a small script that saves the new <Term name="tuple">tuples</Term> and runs the new <Term name="check">checks</Term>, so you can watch the answers change as the story moves along.
+Each chapter tells its story one step at a time. In every step, a new request lands on your desk, and you change the schema only as much as that request needs, never more. Each step comes with a small script that saves the new <Term name="tuple">tuples</Term> and runs the new <Term name="check">checks</Term>, so you can watch the answers change as the story moves along. The file name of each script is in the title of its code block. If words like tuple and check are new to you, [Concepts](/concepts) explains them in a few minutes.
 
 When the chapter is over, its last section, **Run it**, hands you the keyboard:
 
-1. The full `schema.ts` as it stands at the end of the chapter. Replace your file with it.
-2. The commands that publish it. Each chapter uses the next label: `v1` in the first chapter, `v2` in the second, and so on.
+1. The full `schema.ts` and `helpers.ts` as they stand at the end of the chapter. Replace your files with them.
+2. The commands that publish the schema. Each chapter uses the next label: `tutorial-v1` in the first chapter, `tutorial-v2` in the second, and so on. The Quickstart already used `v1` in this environment, and a label can only be used once, so the tutorial has labels of its own.
 3. The step scripts, which you run in order with `node`. Each one prints the output shown in its step.
 
 Your schema only ever grows. Later chapters add types and relations, but they never remove or rename one, so the tuples you saved along the way keep working.
