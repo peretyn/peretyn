@@ -1,0 +1,114 @@
+---
+title: 2. Teams
+description: Share a document with a whole team, put teams inside teams, and keep access right as people join and leave.
+---
+
+More people at Acme hear about the roadmap. The design team wants to read it. Alice asks for a way to share the roadmap with the whole team.
+
+## Share with the design team
+
+Today, Carol is the only person on the design team. You already know how to share a document with one person. So the first idea is to share it with each member of the team:
+
+```ts
+await authz.write({
+  writes: designTeam.map((id) => ({
+    subject: { type: 'user', id },
+    relation: 'viewer',
+    object: { type: 'document', id: 'roadmap' },
+  })),
+});
+```
+
+Now think about next month. Erin joins the design team. Erin must see every document the team can see. So you must find every document that was shared with the team, and save a tuple for Erin on each one.
+
+Then Carol moves to another team. You must find the tuples that Carol got from the design team, and delete them. But you must keep the tuples for documents that were shared with Carol directly. The tuples do not tell you which ones came from the team.
+
+The problem is that the team exists at Acme, but not in your <Term name="schema">schema</Term>. So add a `team` type. A team has members:
+
+```ts
+team: type({
+  relations: { member: ['user'] },
+}),
+```
+
+Next, make it possible to share a document with a team. Add `team#member` to the list of who can be a viewer:
+
+```ts
+viewer: ['user', 'team#member'],
+```
+
+`team#member` means "every member of a team". So one <Term name="tuple">tuple</Term> shares the roadmap with the whole team: `team:design#member` is `viewer` on `document:roadmap`. When Peretyn runs a check, it uses the members that the team has at that moment.
+
+Carol joins the design team, and Alice shares the roadmap with the team:
+
+<include>../../../snippets/tutorial/02-teams/share-team.ts</include>
+
+The script prints:
+
+```txt
+carol can_view document:roadmap: allowed
+carol can_edit document:roadmap: denied
+bob can_edit document:roadmap: allowed
+```
+
+Carol can view the roadmap because Carol is on the design team. Carol cannot edit it, because the team is a `viewer`, not an `editor`. Bob is still an editor from the previous chapter. You changed the schema, but the old tuples did not change.
+
+## Erin joins
+
+Erin joins the design team. With one tuple for each member, this would mean many new tuples. With a team, it is one tuple:
+
+<include>../../../snippets/tutorial/02-teams/join.ts</include>
+
+The script prints `erin can_view document:roadmap: allowed`. You did not change the schema or the roadmap. Erin can now see every document shared with the team, including the documents shared before Erin joined.
+
+## Design grows a brand team
+
+The design team grows, so Acme creates a smaller brand team inside it. The brand team will have its own documents. But the people on the brand team are still designers, so they must also see every document of the design team.
+
+You could add each person from the brand team to the design team too. But that is the same problem as before: one tuple for each person. Instead, let a team include all the members of another team:
+
+```ts
+team: type({
+  relations: { member: ['user', 'team#member'] },
+}),
+```
+
+This is the same `team#member` that you used for the roadmap. Now a team can also have it as a member. Dan joins the brand team, and the brand team joins the design team:
+
+<include>../../../snippets/tutorial/02-teams/brand.ts</include>
+
+The script prints `dan can_view document:roadmap: allowed`. Nobody shared the roadmap with Dan or with the brand team. But Dan is on the brand team, the brand team is part of the design team, and the design team can view the roadmap. Peretyn follows this chain to find the answer.
+
+## Carol leaves
+
+Carol moves to another team. Delete the tuple that makes Carol a member of the design team:
+
+<include>../../../snippets/tutorial/02-teams/leave.ts</include>
+
+The script prints:
+
+```txt
+carol can_view document:roadmap: denied
+erin can_view document:roadmap: allowed
+```
+
+With one delete, Carol loses access to the roadmap and to every other document shared with the design team. Erin is still on the team, so Erin keeps access.
+
+## Run it
+
+Replace your `schema.ts` with the schema from the end of this chapter:
+
+<include>../../../snippets/tutorial/02-teams/schema.ts</include>
+
+Publish the schema, then run the scripts in order:
+
+```sh
+peretyn build --schema schema.ts
+peretyn apply --label v2
+node share-team.ts
+node join.ts
+node brand.ts
+node leave.ts
+```
+
+Each script prints the output shown in its step.

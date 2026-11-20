@@ -1,0 +1,50 @@
+---
+title: Tutorial
+description: Build the authorization of a shared drive, one requirement at a time.
+---
+
+In this tutorial, you're building a shared drive for companies. People upload documents, share them with colleagues, sort them into folders and send out public links. Under the hood, every one of those features comes down to the same question: is this person allowed to do this?
+
+You'll answer that question with Peretyn, one request at a time. Each chapter opens with something your users ask for. You try the obvious solution first, see where it starts to crack, and then grow the <Term name="schema">schema</Term> until it handles the request properly. By the last chapter, you'll have used every building block a schema has to offer.
+
+## Before you start
+
+Finish the [Quickstart](/quickstart) first. You need its environment variables, the CLI and the SDK.
+
+Then set up a fresh directory for the drive, just like you did in the quickstart:
+
+```sh
+mkdir shared-drive
+cd shared-drive
+npm init -y
+npm pkg set type=module
+```
+
+```npm
+npm install @peretyn/sdk
+```
+
+Stick with the same `development` key for the whole tutorial. Each chapter picks up the tuples that the earlier chapters left behind, so it's best to follow them in order.
+
+## How each chapter works
+
+Each chapter tells a story, one step at a time. In every step, your users come to you with a new request, and you change the schema only as much as that request needs. Each step also comes with a small script that saves the new <Term name="tuple">tuples</Term> and runs the new <Term name="check">checks</Term>, so you can watch the answers change.
+
+The last section of every chapter, **Run it**, gathers everything you need to try it yourself:
+
+1. The full `schema.ts` as it stands at the end of the chapter. Replace your file with it.
+2. The commands that publish it. Each chapter uses the next label: `v1` in the first chapter, `v2` in the second, and so on.
+3. The step scripts, which you run in order with `node`. Each one prints the output shown in its step.
+
+The schema only ever grows. Later chapters add types and relations, but they never remove or rename one, so the tuples you saved earlier keep working.
+
+## Chapters
+
+<Cards>
+  <Card title="1. Owners and sharing" href="/tutorial/owners">
+    Let people own documents and share them with others.
+  </Card>
+  <Card title="2. Teams" href="/tutorial/teams">
+    Share with a whole team, and put teams inside teams.
+  </Card>
+</Cards>

@@ -1,0 +1,202 @@
+---
+title: 1. Owners and sharing
+description: Let people own documents and share them with others, and check permissions instead of roles.
+---
+
+It's launch week. Your drive is live, companies can upload their documents and find them again, and Acme has just signed up as your very first customer. Alice, a product manager at Acme, is the first one through the door.
+
+The first thing Alice uploads is the product roadmap. It's still a rough draft, and nobody else is supposed to see it yet.
+
+This chapter follows that one document through its first week. The roadmap starts out private, then Alice lets Bob read it, and by Friday Bob is editing it. Somewhere along the way, a simple `if` statement stops being enough, and you'll see what to reach for instead.
+
+## Alice owns what Alice uploads
+
+Alice expects one thing from your drive: nobody else can open the roadmap.
+
+You don't need anything clever for that. Save who uploaded the document, and compare it with the current user in the handler:
+
+```ts
+if (document.ownerId !== user.id) {
+  throw new ForbiddenError();
+}
+```
+
+One column, one line, and the job is done. For a private document, that's exactly the right amount of code, so leave it alone for now.
+
+## Alice shares with Bob
+
+Two days later, the roadmap is ready for a second pair of eyes. Alice wants Bob to read it, but not to change it.
+
+The obvious fix is one more list and one more condition:
+
+```ts
+if (document.ownerId !== user.id && !document.viewerIds.includes(user.id)) {
+  throw new ForbiddenError();
+}
+```
+
+On its own, that's still fine. But sharing is where access control starts to get out of hand, and this little condition is the seed of something much bigger. Every feature you ship from now on adds a branch to it: teams, folders, public links, people who must be kept out, company admins. Fast-forward six months, and the function that decides who can open a document looks like this:
+
+```ts
+async function canViewDocument(user: User, document: Document): Promise<boolean> {
+  if (document.ownerId === user.id) {
+    return true;
+  }
+  if (document.viewerIds.includes(user.id) || document.editorIds.includes(user.id)) {
+    return true;
+  }
+  if (document.isPublic) {
+    return true;
+  }
+  if (document.blockedUserIds.includes(user.id)) {
+    return false;
+  }
+  for (const teamId of document.sharedWithTeamIds) {
+    const team = await db.teams.find(teamId);
+    if (team.memberIds.includes(user.id)) {
+      return true;
+    }
+    for (const subTeamId of team.subTeamIds) {
+      const subTeam = await db.teams.find(subTeamId);
+      if (subTeam.memberIds.includes(user.id)) {
+        return true;
+      }
+    }
+  }
+  let folderId = document.folderId;
+  while (folderId) {
+    const folder = await db.folders.find(folderId);
+    if (folder.ownerId === user.id || folder.viewerIds.includes(user.id)) {
+      return true;
+    }
+    folderId = folder.parentId;
+  }
+  return user.role === 'admin' && user.companyId === document.companyId;
+}
+```
+
+Every branch was added for a good reason, and every one of them looked harmless at the time. Put together, though, they hide bugs that nobody ever decided on:
+
+- Blocked users are checked too late. A blocked user can still open the document if it's public, or if someone shared it with them directly.
+- Teams inside teams only work one level deep. Nest a team one level further, and its members quietly lose access without a single error.
+- Every check fires off a database query for each team and each folder it walks through.
+- `canEditDocument` started life as a copy of half this function, and the two have been drifting apart ever since.
+
+All four bugs grow from the same root: the function mixes up two very different kinds of information.
+
+- <Term name="fact">Facts</Term> are about your data. Alice owns the roadmap, the roadmap is shared
+  with Bob, Carol is on the design team. Facts change all day long, every time someone uploads or
+  shares something.
+- <Term name="rule">Rules</Term> are about your product. Owners can view their documents, and so can
+  the people they share them with. Rules only change when your product does.
+
+In `canViewDocument`, facts and rules are tangled together in the same lines, and every handler has to get both right. This is where Peretyn comes in, because it keeps the two apart:
+
+- A fact is a <Term name="relation">relation</Term>, and you save it as a <Term name="tuple">tuple</Term>.
+- A rule is a <Term name="permission">permission</Term>, and you write it once, in the <Term name="schema">schema</Term>.
+
+Here's your first schema. It holds just what Alice and Bob need today, and nothing more:
+
+```ts
+user: type(),
+document: type({
+  relations: { owner: ['user'], viewer: ['user'] },
+  permissions: { can_view: any('owner', 'viewer') },
+}),
+```
+
+It has two relations and one permission:
+
+- `owner` is whoever uploaded the document. The `['user']` next to it says that only users can be owners.
+- `viewer` is someone the document has been shared with. Bob gets this relation instead of becoming an owner, because an owner can do everything, today and in every feature you'll add later. Bob only needs to read.
+- `can_view` is the rule. `any` grants it to anyone who holds at least one of the listed relations, so owners can view, and so can viewers.
+
+From now on, the handler doesn't compare ids anymore. It runs a <Term name="check">check</Term>, a single question to Peretyn: can this user view this document? It doesn't know or care why the answer is yes or no, and that's the point. When the rules change, you update the schema, and the handler stays exactly as it is.
+
+When Alice uploads the roadmap, your app saves a tuple saying Alice is the owner. When Alice shares it, your app saves another saying Bob is a viewer. Then it's time to ask the question, for Alice, for Bob, and for Carol from the design team, who hasn't been given access:
+
+<include>../../../snippets/tutorial/01-owners/share.ts</include>
+
+The script prints:
+
+```txt
+alice can_view document:roadmap: allowed
+bob can_view document:roadmap: allowed
+carol can_view document:roadmap: denied
+```
+
+Alice gets in as the owner, and Bob gets in as a viewer. Carol is turned away, because no tuple gives Carol access, and Peretyn never allows anything it wasn't told to allow.
+
+## Bob fixes a typo
+
+On Friday afternoon, Bob spots a typo in the Q3 section. Alice is stuck in meetings all afternoon, so Alice asks Bob to just go ahead and fix it.
+
+There's a catch: your drive can't edit documents yet. So you ship editing, and the handler that saves changes comes with a brand new question: can this user edit this document? Owners can, of course. Bob needs to as well, but Bob still isn't an owner, so you add a third <Term name="relation">relation</Term>: `editor`.
+
+Your first draft of the rules probably looks something like this:
+
+```ts
+permissions: {
+  can_edit: any('owner', 'editor'),
+  can_view: any('owner', 'viewer', 'editor'),
+},
+```
+
+It works, but owners and editors now show up twice. Next month, when you add another relation that can edit, you'll have to remember to add it to `can_view` as well. Forget it just once, and someone ends up able to edit a document they can't even open.
+
+What you really mean is simpler than that: anyone who can edit a document can also view it. So say exactly that:
+
+```ts
+relations: { owner: ['user'], editor: ['user'], viewer: ['user'] },
+permissions: {
+  can_edit: any('owner', 'editor'),
+  can_view: any('viewer', 'can_edit'),
+},
+```
+
+A <Term name="permission">permission</Term> can build on another permission. `can_view` now includes everyone who has `can_edit`, so the list of who can edit lives in one place, and `can_view` follows it wherever it goes.
+
+Alice makes Bob an editor:
+
+<include>../../../snippets/tutorial/01-owners/edit.ts</include>
+
+The script prints:
+
+```txt
+bob can_edit document:roadmap: allowed
+alice can_edit document:roadmap: allowed
+alice can_view document:roadmap: allowed
+```
+
+Bob can edit because Bob is an editor, and the typo is gone before the weekend. Alice can edit because Alice is the owner. And Alice can still view the roadmap, even though `can_view` doesn't mention owners anymore: owners can edit, and anyone who can edit can view.
+
+## What you built
+
+In a single week, the roadmap went from private to shared to edited by two people. Your schema showed up the moment Alice shared the roadmap, grew once more when editing arrived, and from then on your handlers only ever asked Peretyn two questions: `can_view` and `can_edit`.
+
+That's the habit to carry through the rest of this tutorial. Whenever a new request comes in, ask yourself whether it's a new <Term name="fact">fact</Term> or a new <Term name="rule">rule</Term>, and change only that.
+
+## Run it
+
+Replace your `schema.ts` with the schema as it stands at the end of this chapter:
+
+<include>../../../snippets/tutorial/01-owners/schema.ts</include>
+
+Publish the schema, then run the scripts in order:
+
+```sh
+peretyn build --schema schema.ts
+peretyn apply --label v1
+node share.ts
+node edit.ts
+```
+
+Each script prints the output shown in its step.
+
+## Next
+
+<Cards>
+  <Card title="2. Teams" href="/tutorial/teams">
+    Word gets around, and now the whole design team wants the roadmap.
+  </Card>
+</Cards>

@@ -2,7 +2,12 @@ import { extname, join, resolve } from 'node:path';
 import { execa } from 'execa';
 import { beforeAll, describe, expect, inject, it } from 'vitest';
 import { schemaToOpenFGA, type PeretynSchema } from '@peretyn/sdk';
-import { provisionEnvironment } from './runtime-admin.js';
+import {
+  provisionEmptyEnvironment,
+  provisionEnvironment,
+  writeModel,
+  type ProvisionedEnvironment,
+} from './runtime-admin.js';
 
 const SNIPPETS_DIR = resolve(import.meta.dirname, '../../../services/docs/snippets');
 const ENVIRONMENT_NAME = 'development';
@@ -55,6 +60,43 @@ const SNIPPET_RUNS: Record<string, ScriptRun[]> = {
   ],
 };
 
+const TUTORIAL_CHAPTERS: Record<string, ScriptRun[]> = {
+  'tutorial/01-owners': [
+    {
+      script: 'share.ts',
+      output: [
+        'alice can_view document:roadmap: allowed',
+        'bob can_view document:roadmap: allowed',
+        'carol can_view document:roadmap: denied',
+      ].join('\n'),
+    },
+    {
+      script: 'edit.ts',
+      output: [
+        'bob can_edit document:roadmap: allowed',
+        'alice can_edit document:roadmap: allowed',
+        'alice can_view document:roadmap: allowed',
+      ].join('\n'),
+    },
+  ],
+  'tutorial/02-teams': [
+    {
+      script: 'share-team.ts',
+      output: [
+        'carol can_view document:roadmap: allowed',
+        'carol can_edit document:roadmap: denied',
+        'bob can_edit document:roadmap: allowed',
+      ].join('\n'),
+    },
+    { script: 'join.ts', output: 'erin can_view document:roadmap: allowed' },
+    { script: 'brand.ts', output: 'dan can_view document:roadmap: allowed' },
+    {
+      script: 'leave.ts',
+      output: 'carol can_view document:roadmap: denied\nerin can_view document:roadmap: allowed',
+    },
+  ],
+};
+
 async function loadSchema(snippet: string): Promise<PeretynSchema> {
   const module = (await import(join(SNIPPETS_DIR, snippet, 'schema.ts'))) as {
     schema: PeretynSchema;
@@ -99,5 +141,30 @@ describe.each(Object.entries(SNIPPET_RUNS))('the %s docs snippets', (snippet, ru
 
   it.each(runs)('$script prints what the docs say', async ({ script, output }) => {
     expect(await runScript(snippet, { script, token })).toBe(output);
+  });
+});
+
+describe('the tutorial docs snippets, in order against one environment', () => {
+  let environment: ProvisionedEnvironment;
+
+  beforeAll(async () => {
+    environment = await provisionEmptyEnvironment({
+      internalUrl: inject('runtimeInternalUrl'),
+      environmentName: ENVIRONMENT_NAME,
+    });
+  });
+
+  describe.each(Object.entries(TUTORIAL_CHAPTERS))('chapter %s', (chapter, runs) => {
+    beforeAll(async () => {
+      await writeModel({
+        internalUrl: inject('runtimeInternalUrl'),
+        storeId: environment.storeId,
+        model: schemaToOpenFGA(await loadSchema(chapter)),
+      });
+    });
+
+    it.each(runs)('$script prints what the docs say', async ({ script, output }) => {
+      expect(await runScript(chapter, { script, token: environment.token })).toBe(output);
+    });
   });
 });

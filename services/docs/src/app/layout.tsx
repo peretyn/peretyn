@@ -5,6 +5,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 
 import './global.css';
 import { cn } from '@peretyn/ui/lib/utils';
+import { TooltipProvider } from '@peretyn/ui/components/tooltip';
 import {
   ANALYTICS_PROXY_PATH,
   PROXIED_TRACKER_PATH,
@@ -28,7 +29,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={cn('font-sans antialiased', fontSans.variable, fontMono.variable)}
     >
       <body className="flex min-h-screen flex-col">
-        <RootProvider theme={{ defaultTheme: 'dark' }}>{children}</RootProvider>
+        <RootProvider theme={{ defaultTheme: 'dark' }}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </RootProvider>
         <Script
           src={PROXIED_TRACKER_PATH}
           data-website-id={UMAMI_WEBSITE_ID}
