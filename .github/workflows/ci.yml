@@ -120,11 +120,21 @@ jobs:
           test -d "$HOME/quoted-tilde"
           test ! -e '~'
 
+      - name: Without root, the install directory defaults to ~/peretyn
+        run: |
+          ! env -u PERETYN_DIR PERETYN_TAG=unused PERETYN_DOMAIN=1.2.3.4 sh deploy/install.sh </dev/null 2>/dev/null
+          test -d "$HOME/peretyn"
+
+      - name: As root, the install directory defaults to /opt/peretyn
+        run: |
+          ! sudo env PERETYN_TAG=unused PERETYN_DOMAIN=1.2.3.4 sh deploy/install.sh </dev/null 2>/dev/null
+          sudo test -d /opt/peretyn
+
       - name: At a terminal, the installer asks for the install directory
         run: |
           { printf '~/prompted-install\n'; sleep 2; printf '1.2.3.4\n'; sleep 5; } |
             script -qec 'env -u PERETYN_DIR -u PERETYN_DOMAIN PERETYN_TAG=unused sh deploy/install.sh' /dev/null >prompted.log || true
-          grep -q 'Install directory \[/opt/peretyn\]' prompted.log
+          grep -q "Install directory \\[$HOME/peretyn\\]" prompted.log
           test -d "$HOME/prompted-install"
 
       - name: At a terminal, declining the summary installs nothing

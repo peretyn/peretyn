@@ -5,7 +5,8 @@ REPOSITORY="peretyn/peretyn"
 RUNTIME_TAG_PREFIX="@peretyn/runtime@"
 RELEASES_API="https://api.github.com/repos/$REPOSITORY/releases?per_page=100"
 RAW_ORIGIN="https://raw.githubusercontent.com/$REPOSITORY"
-DEFAULT_DIR="/opt/peretyn"
+SYSTEM_DIR="/opt/peretyn"
+USER_DIR_NAME="peretyn"
 DEPLOY_FILES="compose.yaml Caddyfile"
 REQUIRED_PORTS="80 443"
 DATABASE_VOLUME="peretyn_postgres-data"
@@ -233,16 +234,38 @@ expand_home() {
   esac
 }
 
-choose_install_dir() {
-  if [ -z "${PERETYN_DIR+set}" ] && [ -f "$DEFAULT_DIR/.env" ]; then
-    PERETYN_DIR="$DEFAULT_DIR"
+is_root() {
+  [ "$(id -u)" -eq 0 ]
+}
+
+default_install_dir() {
+  if is_root; then
+    printf '%s' "$SYSTEM_DIR"
+    return
   fi
-  ask_with_default PERETYN_DIR "Install directory" "$DEFAULT_DIR"
+  printf '%s/%s' "$HOME" "$USER_DIR_NAME"
+}
+
+existing_install_dir() {
+  for dir in "$(default_install_dir)" "$SYSTEM_DIR"; do
+    if [ -f "$dir/.env" ]; then
+      printf '%s' "$dir"
+      return
+    fi
+  done
+}
+
+choose_install_dir() {
+  if [ -z "${PERETYN_DIR+set}" ]; then
+    existing=$(existing_install_dir)
+    [ -z "$existing" ] || PERETYN_DIR="$existing"
+  fi
+  ask_with_default PERETYN_DIR "Install directory" "$(default_install_dir)"
   PERETYN_DIR=$(expand_home "$PERETYN_DIR")
 }
 
 enter_install_dir() {
-  mkdir -p "$PERETYN_DIR" 2>/dev/null || fail "cannot create $PERETYN_DIR. Run as root or set PERETYN_DIR to a directory you own."
+  mkdir -p "$PERETYN_DIR" 2>/dev/null || fail "cannot create $PERETYN_DIR. Choose a directory you own, such as ~/$USER_DIR_NAME, or run as root."
   cd "$PERETYN_DIR"
 }
 
