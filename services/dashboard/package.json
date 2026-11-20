@@ -1,6 +1,6 @@
 {
   "name": "@peretyn/dashboard",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "Peretyn developer dashboard — Next.js.",
   "type": "module",

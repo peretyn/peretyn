@@ -1,6 +1,6 @@
 {
   "name": "@peretyn/control",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "Peretyn control plane — Hono service, owns peretyn_control schema.",
   "type": "module",

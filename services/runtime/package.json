@@ -1,6 +1,6 @@
 {
   "name": "@peretyn/runtime",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "Peretyn runtime — Go service embedding OpenFGA.",
   "scripts": {
