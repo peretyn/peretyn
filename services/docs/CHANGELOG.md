@@ -1,5 +1,13 @@
 # @peretyn/docs
 
+## 0.8.1
+
+### Patch Changes
+
+- 4fa3c9c: The Quickstart shows animated captures of installing Peretyn, creating a project in the dashboard, setting the environment and publishing the schema, and its publish step now previews changes with `peretyn plan`. `pnpm --filter @peretyn/docs capture` records the captures again.
+- ed6237e: The tutorial uses its own schema labels, names each step's script, says what each chapter needs, shares a small helpers file across scripts, and opens each step with a one-line summary. It checks visitors who aren't signed in, lists what a user can see, calls the company a company, and states where blocks, admins and folder moves need care. Concepts explains wildcards, and the Quickstart says that step 1 needs a browser.
+- 8965372: The installer no longer needs root: it defaults to `~/peretyn` for other users and `/opt/peretyn` for root, and finds an existing install in either directory. The self-hosting page says so, and its local evaluation section no longer repeats the installer command. The Quickstart starts Peretyn with the installer and its defaults.
+
 ## 0.8.0
 
 ### Minor Changes
