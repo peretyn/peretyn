@@ -89,24 +89,34 @@ schema.ts:6:40: Peretyn schema: type "doc" permission "view": "ghost" is not a r
 Compares the model file with the model that the environment runs, and prints what `apply` would change:
 
 ```sh
-peretyn plan
+peretyn plan --label v2
 ```
 
 ```txt
-plan: changes to apply
+changes to apply
   ~ type document
       + editor
 
-run: peretyn apply --label <label>
+run: peretyn apply --label v2
 ```
+
+`--label` only fills in the suggested `apply` command.
 
 ## `peretyn apply`
 
-Publishes the model file to the environment under a label. `--label` is required.
+Publishes the model file to the environment under a label, and prints the same changes as `plan` first. `--label` is required.
 
 ```sh
 peretyn apply --label v2
 ```
+
+`apply` refuses a model that removes a type or a relation, because checks stop counting the tuples stored under it. Renaming a relation counts as removing it:
+
+```txt
+peretyn: This model removes document#owner. Checks stop counting the tuples stored under them. To publish it anyway, run peretyn apply with --allow-destructive.
+```
+
+To publish it anyway, add `--allow-destructive`. The tuples stay stored. They count again if a later model brings the type or relation back.
 
 ## `peretyn test`
 

@@ -40,12 +40,24 @@ type modelDiff struct {
 	HasChanges bool `json:"hasChanges"`
 }
 
+func (d modelDiff) removesSomething() bool {
+	if len(d.RemovedTypes) > 0 {
+		return true
+	}
+	for _, ct := range d.ChangedTypes {
+		if len(ct.RemovedRelations) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func printDiff(d modelDiff) {
 	if !d.HasChanges {
 		fmt.Println("no changes — the deployed model matches the compiled one")
 		return
 	}
-	fmt.Println("plan: changes to apply")
+	fmt.Println("changes to apply")
 	for _, t := range d.AddedTypes {
 		fmt.Printf("  + type %s\n", t)
 	}
@@ -61,5 +73,16 @@ func printDiff(d modelDiff) {
 			fmt.Printf("      - %s\n", r)
 		}
 	}
-	fmt.Println("\nrun: peretyn apply --label <label>")
+	fmt.Println()
+}
+
+func applyCommand(label string, d modelDiff) string {
+	if label == "" {
+		label = "<label>"
+	}
+	command := "peretyn apply --label " + label
+	if d.removesSomething() {
+		command += " --allow-destructive"
+	}
+	return command
 }

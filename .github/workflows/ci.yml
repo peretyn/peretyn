@@ -78,6 +78,13 @@ jobs:
       - name: Integration tests (Postgres)
         run: pnpm go:test:integration
 
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: e2e-results
+          path: packages/e2e/results/
+          if-no-files-found: ignore
+
   installer:
     name: Installer
     runs-on: ubuntu-latest

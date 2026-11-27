@@ -38,10 +38,11 @@ const publishInput = z.object({
   label: z.string().min(1).max(MAX_LABEL_LENGTH),
   model: openFGAModel,
   dsl: z.string().min(1).max(MAX_DSL_LENGTH),
+  allowDestructive: z.boolean().optional(),
 });
 
 publishRoute.post('/schema', zValidator('json', publishInput), async (c) => {
-  const { label, model, dsl } = c.req.valid('json');
+  const { label, model, dsl, allowDestructive } = c.req.valid('json');
   return Result.pipe(
     publishSchema({
       environment: c.get('environment'),
@@ -49,6 +50,7 @@ publishRoute.post('/schema', zValidator('json', publishInput), async (c) => {
       model,
       dsl,
       publishedBy: 'peretyn-cli',
+      allowDestructive,
     }),
     Result.map((schemaVersion) => c.json({ schemaVersion }, StatusCodes.CREATED)),
     Result.mapError((error) => errorResponse(c, error)),

@@ -10,23 +10,25 @@ import (
 func newApplyCmd() *cobra.Command {
 	var s settings
 	var label string
+	var allowDestructive bool
 	cmd := &cobra.Command{
 		Use:   "apply",
 		Short: "Deploy the compiled model under a version label",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runApply(&s, label)
+			return runApply(&s, label, allowDestructive)
 		},
 	}
 	s.bindToken(cmd)
 	s.bindModel(cmd, "model", "")
 	s.bindControl(cmd)
 	cmd.Flags().StringVar(&label, "label", "", "schema version label (required)")
+	cmd.Flags().BoolVar(&allowDestructive, "allow-destructive", false, "publish even if the model removes types or relations")
 	return cmd
 }
 
 var errLabelRequired = errors.New("--label is required")
 
-func runApply(s *settings, label string) error {
+func runApply(s *settings, label string, allowDestructive bool) error {
 	if err := s.resolve(); err != nil {
 		return err
 	}
@@ -40,6 +42,11 @@ func runApply(s *settings, label string) error {
 	if err != nil {
 		return err
 	}
+	diff, err := fetchDiff(s, art)
+	if err != nil {
+		return err
+	}
+	printDiff(diff)
 	var resp struct {
 		SchemaVersion struct {
 			ID                          string `json:"id"`
@@ -47,7 +54,7 @@ func runApply(s *settings, label string) error {
 			OpenfgaAuthorizationModelID string `json:"openfgaAuthorizationModelId"`
 		} `json:"schemaVersion"`
 	}
-	body := map[string]any{"label": label, "model": art.Model, "dsl": art.DSL}
+	body := map[string]any{"label": label, "model": art.Model, "dsl": art.DSL, "allowDestructive": allowDestructive}
 	if err := post(postRequest{base: s.control, token: s.token, path: "/publish/v1/schema", body: body, out: &resp}); err != nil {
 		return err
 	}
