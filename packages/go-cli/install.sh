@@ -116,8 +116,13 @@ is_on_path() {
   return 1
 }
 
+shell_name() {
+  login_shell="${SHELL:-}"
+  printf '%s' "${login_shell##*/}"
+}
+
 shell_profile() {
-  case "${SHELL##*/}" in
+  case "$(shell_name)" in
     zsh) echo "$HOME/.zshrc" ;;
     bash) echo "$HOME/.bashrc" ;;
     *) echo "$HOME/.profile" ;;
@@ -126,7 +131,7 @@ shell_profile() {
 
 say_how_to_add_to_path() {
   is_on_path && return
-  if [ "${SHELL##*/}" = fish ]; then
+  if [ "$(shell_name)" = fish ]; then
     say "$PERETYN_BIN_DIR is not on your PATH. Add it with:"
     say "  fish_add_path $PERETYN_BIN_DIR"
     return

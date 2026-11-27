@@ -222,7 +222,14 @@ jobs:
         env:
           PERETYN_BIN_DIR: ${{ runner.temp }}/bin
           GITHUB_TOKEN: ${{ github.token }}
-        run: sh packages/go-cli/install.sh </dev/null
+        run: |
+          set -o pipefail
+          env -u SHELL sh packages/go-cli/install.sh </dev/null 2>&1 | tee install.log
+
+      - name: Without SHELL, the install still ends with the PATH line and the next step
+        run: |
+          grep -q 'is not on your PATH' install.log
+          grep -q '^Next: compile your schema' install.log
 
       - name: Installed binary runs
         run: '"$RUNNER_TEMP/bin/peretyn" --version'
