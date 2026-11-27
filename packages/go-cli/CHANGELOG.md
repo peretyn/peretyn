@@ -1,5 +1,15 @@
 # @peretyn/go-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- 1e1c100: `peretyn apply` refuses a model that removes a type or a relation, since checks stop counting the tuples stored under it. Add `--allow-destructive` to publish it anyway. This breaks scripts that remove relations on purpose until they add the flag. `apply` now prints the planned changes first, `plan` takes `--label` to fill in the suggested command, and CLI errors show the server's message instead of the raw response.
+
+### Patch Changes
+
+- 61f645d: The CLI installer finishes when `SHELL` is unset, as over `docker exec` or in minimal containers, and prints the PATH line and the next step.
+
 ## 0.2.0
 
 ### Minor Changes
