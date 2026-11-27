@@ -49,8 +49,9 @@ func runPlan(s *settings, label string) error {
 		return nil
 	}
 	if diff.removesSomething() {
-		fmt.Println("\nThis removes types or relations. Checks stop counting the tuples stored under them.")
+		fmt.Println("This removes types or relations. Checks stop counting the tuples stored under them.")
+		fmt.Println()
 	}
-	fmt.Printf("\nrun: %s\n", applyCommand(label, diff))
+	fmt.Printf("run: %s\n", applyCommand(label, diff))
 	return nil
 }

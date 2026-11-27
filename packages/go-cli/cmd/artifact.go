@@ -73,6 +73,7 @@ func printDiff(d modelDiff) {
 			fmt.Printf("      - %s\n", r)
 		}
 	}
+	fmt.Println()
 }
 
 func applyCommand(label string, d modelDiff) string {

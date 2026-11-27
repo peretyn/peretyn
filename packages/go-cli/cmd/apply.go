@@ -47,7 +47,6 @@ func runApply(s *settings, label string, allowDestructive bool) error {
 		return err
 	}
 	printDiff(diff)
-	fmt.Println()
 	var resp struct {
 		SchemaVersion struct {
 			ID                          string `json:"id"`
