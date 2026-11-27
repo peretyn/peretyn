@@ -57,6 +57,13 @@ export function diffModels(prev: OpenFGAModel | null, next: OpenFGAModel): Model
   return { addedTypes, removedTypes, changedTypes, hasChanges };
 }
 
+export function removedNames(diff: ModelDiff): string[] {
+  const relations = diff.changedTypes.flatMap(({ type, removedRelations }) =>
+    removedRelations.map((relation) => `${type}#${relation}`),
+  );
+  return [...diff.removedTypes, ...relations];
+}
+
 function indexTypes(model: OpenFGAModel | null): TypeIndex {
   const out: TypeIndex = {};
   for (const td of model?.type_definitions ?? []) out[td.type] = td.relations ?? {};

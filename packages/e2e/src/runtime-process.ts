@@ -9,10 +9,14 @@ export const E2E_INTERNAL_SECRET = 'e2e-internal-secret';
 const READY_TIMEOUT_MS = 120_000;
 const READY_POLL_INTERVAL_MS = 300;
 
-export interface RuntimeProcess {
+export interface ServiceProcess {
+  name: string;
   url: string;
-  internalUrl: string;
   process: Subprocess;
+}
+
+export interface RuntimeProcess extends ServiceProcess {
+  internalUrl: string;
 }
 
 export interface RuntimeOptions {
@@ -23,6 +27,7 @@ export interface RuntimeOptions {
 
 export async function startRuntime(options: RuntimeOptions): Promise<RuntimeProcess> {
   const runtime = {
+    name: 'Runtime',
     url: `http://localhost:${options.port}`,
     internalUrl: `http://localhost:${options.internalPort}`,
     process: spawnRuntime(options),
@@ -58,24 +63,24 @@ async function probeHealth(url: string): Promise<{ isReady: boolean; error?: unk
   }
 }
 
-async function throwIfExited(runtime: Subprocess): Promise<void> {
-  const exited = await Promise.race([runtime, sleep(READY_POLL_INTERVAL_MS)]);
+async function throwIfExited(service: ServiceProcess): Promise<void> {
+  const exited = await Promise.race([service.process, sleep(READY_POLL_INTERVAL_MS)]);
   if (!exited) return;
   throw new Error(
-    `Runtime exited with code ${exited.exitCode} before it was ready:\n${exited.stderr}`,
+    `${service.name} exited with code ${exited.exitCode} before it was ready:\n${exited.stderr}`,
   );
 }
 
-async function waitForReady(runtime: RuntimeProcess): Promise<void> {
+export async function waitForReady(service: ServiceProcess): Promise<void> {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   let lastErr: unknown;
   while (Date.now() < deadline) {
-    const probe = await probeHealth(runtime.url);
+    const probe = await probeHealth(service.url);
     if (probe.isReady) return;
     lastErr = probe.error ?? lastErr;
-    await throwIfExited(runtime.process);
+    await throwIfExited(service);
   }
   throw new Error(
-    `Runtime at ${runtime.url} not ready after ${READY_TIMEOUT_MS}ms. Last error: ${lastErr}`,
+    `${service.name} at ${service.url} not ready after ${READY_TIMEOUT_MS}ms. Last error: ${lastErr}`,
   );
 }

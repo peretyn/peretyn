@@ -46,6 +46,9 @@ describe('publishSchema', () => {
     vi.spyOn(schemaVersionRepository, 'lockEnvironmentPublishes').mockResolvedValue(
       Result.succeed(),
     );
+    vi.spyOn(schemaVersionRepository, 'getLatestSchemaVersionByEnvironmentId').mockResolvedValue(
+      Result.succeed(null),
+    );
     writeAuthorizationModel = vi.fn().mockResolvedValue({ authorizationModelId: 'model_1' });
     vi.spyOn(runtime, 'runtimeClient').mockReturnValue({
       writeAuthorizationModel,

@@ -76,11 +76,12 @@ export async function getSchemaVersionsByEnvironmentId(
 
 export async function getLatestSchemaVersionByEnvironmentId(
   environmentId: string,
+  executor: Executor = db(),
 ): Result.ResultAsync<SchemaVersion | null, DatabaseError> {
   return Result.pipe(
     Result.try({
       try: () =>
-        db()
+        executor
           .select()
           .from(schema.schemaVersion)
           .where(eq(schema.schemaVersion.environmentId, environmentId))

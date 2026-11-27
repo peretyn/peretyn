@@ -29,6 +29,12 @@ type responseStatusError struct {
 }
 
 func (e *responseStatusError) Error() string {
+	var body struct {
+		Message string `json:"message"`
+	}
+	if json.Unmarshal([]byte(e.body), &body) == nil && body.Message != "" {
+		return body.Message
+	}
 	return fmt.Sprintf("POST %s -> %d: %s", e.url, e.status, e.body)
 }
 

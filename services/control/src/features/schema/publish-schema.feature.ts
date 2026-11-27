@@ -1,5 +1,6 @@
 import { Result } from '@praha/byethrow';
 import {
+  getLatestSchemaVersionByEnvironmentId,
   getSchemaVersionByLabel,
   insertSchemaVersion,
   labelTaken,
@@ -11,7 +12,7 @@ import { runtimeClient } from '../../lib/runtime-client.js';
 import { RuntimeError } from '../../lib/errors/runtime.error.js';
 import { DatabaseError } from '../../db/database.error.js';
 import { SchemaVersion } from '../../domain/schema-version.entity.js';
-import { OpenFGAModel } from '../../lib/openfga-model.js';
+import { OpenFGAModel, diffModels, removedNames } from '../../lib/openfga-model.js';
 import { Environment, requireActive } from '../../domain/environment.entity.js';
 
 type PublishSchemaInput = {
@@ -20,7 +21,25 @@ type PublishSchemaInput = {
   model: OpenFGAModel;
   dsl: string;
   publishedBy: string;
+  allowDestructive?: boolean;
 };
+
+function destructiveChange(removed: string[]): ConflictError {
+  return new ConflictError({
+    reason: `This model removes ${removed.join(', ')}. Checks stop counting the tuples stored under them. To publish it anyway, run peretyn apply with --allow-destructive.`,
+  });
+}
+
+function assertNothingRemoved(input: PublishSchemaInput, tx: Transaction) {
+  if (input.allowDestructive) return Result.succeed();
+  return Result.pipe(
+    getLatestSchemaVersionByEnvironmentId(input.environment.id, tx),
+    Result.andThen((latest) => {
+      const removed = removedNames(diffModels(latest?.modelJson ?? null, input.model));
+      return removed.length > 0 ? Result.fail(destructiveChange(removed)) : Result.succeed();
+    }),
+  );
+}
 
 function assertLabelAvailable(input: PublishSchemaInput, tx: Transaction) {
   return Result.pipe(
@@ -62,6 +81,7 @@ function publishUnderEnvironmentLock(input: PublishSchemaInput, storeId: string)
     Result.pipe(
       lockEnvironmentPublishes(input.environment.id, tx),
       Result.andThrough(() => assertLabelAvailable(input, tx)),
+      Result.andThrough(() => assertNothingRemoved(input, tx)),
       Result.andThen(() => writeAuthorizationModel(storeId, input.model)),
       Result.andThen(({ authorizationModelId }) =>
         recordSchemaVersion(input, authorizationModelId, tx),
