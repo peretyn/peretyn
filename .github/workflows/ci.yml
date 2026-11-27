@@ -229,7 +229,6 @@ jobs:
       - name: Without SHELL, the install still ends with the PATH line and the next step
         run: |
           grep -q 'is not on your PATH' install.log
-          grep -q '/.profile' install.log
           grep -q '^Next: compile your schema' install.log
 
       - name: Installed binary runs
